@@ -1,0 +1,11 @@
+.env
+*.db
+*.jsonl
+__pycache__/
+*.pyc
+.promptfoo/
+node_modules/
+*.log
+*.egg-info/
+dist/
+build/
