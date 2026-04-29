@@ -1,5 +1,7 @@
 # Local Agent Kit
 
+[![CI](https://github.com/bene-art/local-agent-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/bene-art/local-agent-kit/actions/workflows/ci.yml)
+
 Build a local-first AI agent in 5 minutes. No cloud account required.
 
 ```bash
