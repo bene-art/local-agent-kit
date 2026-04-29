@@ -1,8 +1,8 @@
-# ACP — Agent Context Protocol (v3)
+# PACT — Protocol for Agent Capability and Trust (v3)
 
 ## Overview
 
-ACP (Agent Context Protocol) is a proposed minimal communication layer that enables software agents to interact through **trusted, capability-scoped, and auditable exchanges of intent**.
+PACT (Protocol for Agent Capability and Trust) is a proposed minimal communication layer that enables software agents to interact through **trusted, capability-scoped, and auditable exchanges of intent**.
 
 It is not a replacement for the internet.
 It is a **new layer on top of existing infrastructure**.
@@ -11,11 +11,11 @@ It is a **new layer on top of existing infrastructure**.
 
 ## Core Idea
 
-> ACP enables agents to exchange **signed, capability-scoped intent** — where authority is attenuable, identity survives key rotation, ordering is causal, and failure is never hidden.
+> PACT enables agents to exchange **signed, capability-scoped intent** — where authority is attenuable, identity survives key rotation, ordering is causal, and failure is never hidden.
 
 ---
 
-## Where ACP Fits (Internet Stack Evolution)
+## Where PACT Fits (Internet Stack Evolution)
 
 | Layer | Purpose |
 |-------|---------|
@@ -23,7 +23,7 @@ It is a **new layer on top of existing infrastructure**.
 | Network | TCP/IP (packet routing) |
 | Application | HTTP (data exchange) |
 | Identity | OAuth (access control) |
-| **Intent (ACP)** | **Delegated action + trust between agents** |
+| **Intent (PACT)** | **Delegated action + trust between agents** |
 
 ---
 
@@ -58,7 +58,7 @@ Design a **minimal, open, composable protocol** that allows:
 
 ## Non-Goals
 
-ACP does **not**:
+PACT does **not**:
 - Replace TCP/IP or HTTP
 - Define AI reasoning
 - Require a central authority
@@ -95,7 +95,7 @@ ACP does **not**:
    Verification, authorization, and ordering are agent-level concerns. The transport layer moves bytes — it does not enforce protocol correctness.
 
 7. **Distribution is Not Transparent**
-   Remote agent interaction is fundamentally different from local interaction. Latency, partial failure, and lack of shared memory are not edge cases — they are the norm. ACP does not abstract these away; it makes them explicit.
+   Remote agent interaction is fundamentally different from local interaction. Latency, partial failure, and lack of shared memory are not edge cases — they are the norm. PACT does not abstract these away; it makes them explicit.
 
 8. **Transport Agnostic**
    Works over HTTP, WebSocket, P2P, or radio.
@@ -313,7 +313,7 @@ Everything else is a payload within REQ/RES:
 | Timeout | No response within deadline | **Ambiguous** — B may have acted |
 | Partial failure | B acted, RES lost in transit | **Ambiguous** — A doesn't know |
 
-ACP does not hide ambiguity. Timeout means indeterminate. Idempotency keys enable safe retries.
+PACT does not hide ambiguity. Timeout means indeterminate. Idempotency keys enable safe retries.
 
 ---
 
@@ -337,8 +337,8 @@ An agent's identity is permanent. Its network address is not.
 {
   "agent_id": "sha256:abc123...",
   "endpoints": [
-    {"transport": "https", "uri": "https://agent.example/acp"},
-    {"transport": "wss", "uri": "wss://agent.example/acp"}
+    {"transport": "https", "uri": "https://agent.example/pact"},
+    {"transport": "wss", "uri": "wss://agent.example/pact"}
   ],
   "capabilities": ["schedule_meeting"],
   "ttl": 3600
@@ -414,7 +414,7 @@ Agents that already know each other skip straight to the task REQ.
 
 ## Key Insight
 
-ACP is not just about communication.
+PACT is not just about communication.
 
 It is about:
 
@@ -434,7 +434,7 @@ It is about:
 
 ## Transport Layer (Unchanged)
 
-ACP runs on top of:
+PACT runs on top of:
 - HTTP / HTTPS
 - WebSocket
 - gRPC
@@ -507,7 +507,7 @@ Two independent implementations can:
 
 ## Final Framing
 
-ACP is:
+PACT is:
 - not a product
 - not a platform
 - not a framework
@@ -520,7 +520,7 @@ It is:
 
 ## Theoretical Foundations
 
-| Paper | Contribution to ACP |
+| Paper | Contribution to PACT |
 |-------|--------------------|
 | Saltzer, Reed, Clark — *End-to-End Arguments in System Design* (1984) | Push verification to the agents, not the transport |
 | Waldo et al. — *A Note on Distributed Computing* (1994) | Failure is explicit, never abstracted away |
@@ -533,4 +533,4 @@ It is:
 
 ## One-Line Summary
 
-> ACP is two message types, holder-bound capabilities, and self-certifying identity — everything else is built at the edges.
+> PACT is two message types, holder-bound capabilities, and self-certifying identity — everything else is built at the edges.
