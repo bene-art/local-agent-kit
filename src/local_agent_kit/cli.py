@@ -229,10 +229,13 @@ def cmd_hardware(args):
 
 
 def main():
+    from local_agent_kit import __version__
+
     parser = argparse.ArgumentParser(
         prog="lak",
         description="Local Agent Kit — build local-first AI agents on consumer hardware",
     )
+    parser.add_argument("--version", action="version", version=f"lak {__version__}")
     sub = parser.add_subparsers(dest="command")
 
     p_init = sub.add_parser("init", help="Interactive setup wizard")

@@ -8,7 +8,8 @@ SemVer.
 
 ### Added
 - Smoke test suite (`tests/test_hardware.py`, `test_agent.py`, `test_channels.py`).
-- GitHub Actions CI workflow (`.github/workflows/ci.yml`) — runs syntax check + pytest on Python 3.11 + 3.12.
+- GitHub Actions CI workflow (`.github/workflows/ci.yml`) — runs syntax check + pytest on Python 3.11 / 3.12 / 3.13.
+- `lak --version` flag.
 - `examples/patrick/` — kit-only Patrick configuration showing agent.yaml + IDENTITY.md.
 
 ### Changed

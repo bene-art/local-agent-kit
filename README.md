@@ -59,7 +59,9 @@ The kit detects your system and recommends the best model:
 | 16 GB | gemma3:12b | 8.1 GB | ~15-18 tok/s | Sweet spot |
 | 24 GB | gemma3:12b | 8.1 GB | ~15-18 tok/s | Comfortable, room for more |
 | 32 GB | gemma3:27b | 17 GB | ~8-12 tok/s | Higher quality |
-| 64+ GB | llama3.3:70b | 43 GB | ~5-8 tok/s | Near cloud quality |
+| 48 GB | gemma3:27b | 17 GB | ~12-15 tok/s | 27B with headroom |
+| 64 GB | llama3.3:70b | 43 GB | ~5-8 tok/s | Near cloud quality |
+| 128 GB | llama3.3:70b | 43 GB | ~10-15 tok/s | 70B with full headroom |
 
 **Why these speeds:** LLM inference is memory-bandwidth bound. The GPU reads the entire model (~6 GB for 12b at Q4) for every token. On Apple M4 at ~120 GB/s, that's ~15 tokens/second. This is physics, not software.
 
