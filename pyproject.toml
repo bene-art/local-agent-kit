@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "local-agent-kit"
-version = "0.1.0"
+version = "0.2.0"
 description = "Build local-first AI agents on consumer hardware. Model-agnostic, channel-agnostic, eval-driven."
 readme = "README.md"
 license = {text = "MIT"}

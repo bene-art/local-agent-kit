@@ -170,7 +170,7 @@ conversation_memory:
 
 ## Reference Implementation
 
-[Patrick Agent](https://github.com/bene-art/patrick-agent) is the reference implementation built with this kit. He scores 0.9651 on a 518-entry eval corpus, has six tools, and runs on a Mac mini M4. See his [white paper](https://github.com/bene-art/patrick-agent/blob/main/docs/white_paper_v2.md) for the full technical analysis.
+[Patrick Agent](https://github.com/bene-art/patrick-agent) is the reference implementation built on this kit. Six tools, an immutable scorer with a failure taxonomy, and a Karpathy-style eval loop, all running on a Mac mini M4. See his [white paper](https://github.com/bene-art/patrick-agent/blob/main/docs/white_paper_v2.md) for the full technical analysis, or [`examples/patrick/`](examples/patrick/) for the kit-only configuration.
 
 ## License
 
