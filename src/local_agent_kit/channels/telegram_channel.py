@@ -1,8 +1,8 @@
 """Telegram channel — Bot API polling interface.
 
 Requires:
-  - PAT_TG_BOT_TOKEN (Telegram bot token from @BotFather)
-  - PAT_TG_CHAT_ID (your Telegram chat ID)
+  - TG_BOT_TOKEN (Telegram bot token from @BotFather)
+  - TG_CHAT_ID (your Telegram chat ID)
 
 Usage:
     channel = TelegramChannel()
@@ -35,19 +35,19 @@ class TelegramChannel(Channel):
         chat_id: int | None = None,
         poll_timeout: int = 30,
     ):
-        self.bot_token = bot_token or os.environ.get("PAT_TG_BOT_TOKEN", "")
-        self.chat_id = chat_id or int(os.environ.get("PAT_TG_CHAT_ID", "0"))
+        self.bot_token = bot_token or os.environ.get("TG_BOT_TOKEN", "")
+        self.chat_id = chat_id or int(os.environ.get("TG_CHAT_ID", "0"))
         self.poll_timeout = poll_timeout
         self._session: aiohttp.ClientSession | None = None
         self._offset: int = 0
 
         if not self.bot_token:
             raise ValueError(
-                "Telegram bot token required. Set PAT_TG_BOT_TOKEN or pass bot_token="
+                "Telegram bot token required. Set TG_BOT_TOKEN or pass bot_token="
             )
         if not self.chat_id:
             raise ValueError(
-                "Telegram chat ID required. Set PAT_TG_CHAT_ID or pass chat_id="
+                "Telegram chat ID required. Set TG_CHAT_ID or pass chat_id="
             )
 
     @property

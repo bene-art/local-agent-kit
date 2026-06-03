@@ -139,9 +139,9 @@ tools:
         if gemini_key:
             lines.append(f"GEMINI_API_KEY={gemini_key}")
         if tg_token:
-            lines.append(f"PAT_TG_BOT_TOKEN={tg_token}")
+            lines.append(f"TG_BOT_TOKEN={tg_token}")
         if tg_chat_id:
-            lines.append(f"PAT_TG_CHAT_ID={tg_chat_id}")
+            lines.append(f"TG_CHAT_ID={tg_chat_id}")
         env_path.write_text("\n".join(lines) + "\n" if lines else "# Add API keys here\n")
         print(f"    ✓ .env")
 
