@@ -4,6 +4,7 @@ Commands:
     lak init          Interactive setup wizard
     lak doctor        Preflight health check
     lak bot <dir>     Run the agent
+    lak eval <dir>    Run promptfoo evals against the agent
     lak hardware      Show hardware detection
 """
 from __future__ import annotations
@@ -145,11 +146,18 @@ tools:
         env_path.write_text("\n".join(lines) + "\n" if lines else "# Add API keys here\n")
         print(f"    ✓ .env")
 
+    # Eval harness (promptfoo)
+    from local_agent_kit.eval.scaffold import scaffold_eval
+
+    scaffold_eval(agent_dir, overwrite=False)
+    print(f"    ✓ eval/promptfooconfig.yaml")
+
     print(f"""
   Done! Next steps:
     1. Edit {identity_dir}/IDENTITY.md — make the agent yours
     2. lak doctor --agent {agent_dir}
     3. lak bot {agent_dir}
+    4. lak eval {agent_dir}   (requires Node.js — runs promptfoo)
 """)
     return 0
 
@@ -185,6 +193,11 @@ def cmd_doctor(args):
             print(f"  ✗ Ollama not responding")
             issues += 1
 
+    # promptfoo eval is optional (needs Node.js) — report, don't fail on it.
+    eval_ok = _promptfoo_runner() is not None
+    print(f"  {'✓' if eval_ok else '○'} promptfoo eval "
+          f"({'available' if eval_ok else 'optional — install Node.js 18+ to use `lak eval`'})")
+
     if args.agent:
         agent_dir = Path(args.agent)
         identity = agent_dir / "identity" / "IDENTITY.md"
@@ -196,6 +209,57 @@ def cmd_doctor(args):
 
     print(f"\n  {'All checks passed.' if issues == 0 else f'{issues} issue(s) found.'}")
     return issues
+
+
+def _promptfoo_runner() -> list[str] | None:
+    """Return the command prefix to run promptfoo, or None if Node is absent.
+
+    Prefers a globally installed `promptfoo`; otherwise falls back to `npx`,
+    which fetches promptfoo on demand (keeps the kit's pip footprint unchanged).
+    """
+    if shutil.which("promptfoo"):
+        return ["promptfoo"]
+    if shutil.which("npx"):
+        return ["npx", "-y", "promptfoo@latest"]
+    return None
+
+
+def cmd_eval(args):
+    """Run promptfoo evals against an agent."""
+    from local_agent_kit.eval.scaffold import CONFIG_NAME, EVAL_DIRNAME, scaffold_eval
+
+    agent_dir = Path(args.agent).expanduser().resolve()
+    if not agent_dir.exists():
+        print(f"Agent directory not found: {agent_dir}")
+        print("Run `lak init` first.")
+        return 1
+
+    eval_dir = agent_dir / EVAL_DIRNAME
+    config_path = eval_dir / CONFIG_NAME
+    if args.init or not config_path.exists():
+        scaffold_eval(agent_dir, overwrite=args.init)
+        print(f"  ✓ Eval config ready at {config_path}")
+        if args.init:
+            return 0
+
+    runner = _promptfoo_runner()
+    if runner is None:
+        print("  ✗ Node.js not found — promptfoo is a Node CLI.")
+        print("    Install Node.js 18+ from https://nodejs.org, then re-run `lak eval`.")
+        return 1
+
+    env = os.environ.copy()
+    env["LAK_AGENT_DIR"] = str(agent_dir)  # the provider reads this
+
+    if args.view:
+        cmd = runner + ["view", "-y"]
+    else:
+        cmd = runner + ["eval", "-c", str(config_path)]
+
+    try:
+        return subprocess.run(cmd, cwd=str(eval_dir), env=env).returncode
+    except KeyboardInterrupt:
+        return 130
 
 
 def cmd_bot(args):
@@ -247,6 +311,13 @@ def main():
     p_bot = sub.add_parser("bot", help="Run the agent")
     p_bot.add_argument("agent", help="Agent directory")
 
+    p_eval = sub.add_parser("eval", help="Run promptfoo evals against an agent")
+    p_eval.add_argument("agent", help="Agent directory")
+    p_eval.add_argument("--init", action="store_true",
+                        help="(Re)scaffold the eval config and exit")
+    p_eval.add_argument("--view", action="store_true",
+                        help="Open the promptfoo results viewer")
+
     sub.add_parser("hardware", help="Show hardware detection")
 
     args = parser.parse_args()
@@ -255,6 +326,7 @@ def main():
         "init": cmd_init,
         "doctor": cmd_doctor,
         "bot": cmd_bot,
+        "eval": cmd_eval,
         "hardware": cmd_hardware,
     }
 

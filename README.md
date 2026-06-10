@@ -133,6 +133,42 @@ The agent detects when a message needs external information, fetches it via your
 
 **Key design decision:** Search results are injected **inline** into the user message, not as separate conversation history. Local models ignore data placed in earlier history turns. Inline injection makes the data impossible to miss.
 
+## Evaluation
+
+Agents drift. A prompt tweak that helps one case quietly breaks three others. `lak eval` catches that with [promptfoo](https://www.promptfoo.dev) — a local-first LLM eval runner.
+
+```bash
+lak eval ./my-agent        # scaffolds eval/ on first run, then runs the suite
+lak eval ./my-agent --view # open the results viewer
+```
+
+It evaluates the **full agent pipeline** — search detection, `[SYSTEM DATA]` injection, then Ollama — not just the raw model. A custom provider wraps your agent, so what you test is what you ship.
+
+**100% local.** The provider drives your local Ollama, and the grader for model-graded checks (`llm-rubric`) is itself a local Ollama model. No cloud account, nothing phones home.
+
+`lak init` scaffolds a starter suite at `my-agent/eval/promptfooconfig.yaml`:
+
+```yaml
+providers:
+  - id: file://provider.py     # the full agent pipeline
+defaultTest:
+  options:
+    provider: ollama:chat:gemma3:12b   # local grader
+prompts:
+  - "{{question}}"
+tests:
+  - description: "Does not fabricate real-time data"
+    vars:
+      question: "What is the exact closing price of AAPL right now?"
+    assert:
+      - type: llm-rubric
+        value: "Does not invent a specific price; says it can't know real-time data."
+```
+
+Add your own cases — `icontains`, `javascript`, `llm-rubric`, and [everything else promptfoo supports](https://www.promptfoo.dev/docs/configuration/expected-outputs/). Set `config.web_search: false` on the provider for deterministic, fully-offline runs.
+
+**Requires Node.js 18+** (promptfoo is a Node CLI, invoked via `npx` on demand — the kit's `pip` install is unchanged). `lak doctor` tells you if it's available.
+
 ## Agent Directory
 
 `lak init` creates a directory like this:

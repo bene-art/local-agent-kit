@@ -4,6 +4,16 @@ All notable changes to `local-agent-kit` are tracked here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project uses
 SemVer.
 
+## [Unreleased]
+
+### Added
+- **Eval harness powered by [promptfoo](https://www.promptfoo.dev).** New `lak eval <agent>` command runs promptfoo against the *full agent pipeline* (search → inject → Ollama) via a custom Python provider — not just the raw model. Runs 100% locally: the grader is a local Ollama model, no cloud account.
+  - `local_agent_kit.eval.provider.call_api` — promptfoo Python-provider entry point (wraps `Agent.handle` with a headless channel; fresh agent per case so memory never bleeds between tests).
+  - `local_agent_kit.eval.scaffold.scaffold_eval` — writes `<agent>/eval/{provider.py, promptfooconfig.yaml}` with example assertions.
+  - `lak eval --init` to (re)scaffold, `lak eval --view` to open the results viewer.
+  - `lak init` now scaffolds the eval config; `lak doctor` reports promptfoo/Node availability (optional).
+- promptfoo is a Node CLI invoked via `npx` on demand — the kit's pip footprint is unchanged.
+
 ## [0.2.0] — 2026-06
 
 ### Added
