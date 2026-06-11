@@ -1,10 +1,11 @@
 """lak — Local Agent Kit CLI.
 
 Commands:
-    lak init          Interactive setup wizard
-    lak doctor        Preflight health check
-    lak bot <dir>     Run the agent
-    lak hardware      Show hardware detection
+    lak init             Interactive setup wizard
+    lak doctor           Preflight health check
+    lak bot <dir>        Run the agent
+    lak hardware         Show hardware detection
+    lak templates list   List bundled template starter configs
 """
 from __future__ import annotations
 
@@ -228,6 +229,55 @@ def cmd_hardware(args):
     return 0
 
 
+def _templates_dir() -> Path:
+    """Locate the bundled templates directory.
+
+    Looks in the repo (src/../../templates) for editable installs and falls
+    back to the package neighbor (next to local_agent_kit/) for site-packages
+    installs that bundle templates as package data.
+    """
+    here = Path(__file__).resolve()
+    repo_templates = here.parents[2] / "templates"
+    if repo_templates.exists():
+        return repo_templates
+    return here.parent / "templates"
+
+
+def cmd_templates(args):
+    """List bundled template starter configs."""
+    action = getattr(args, "action", None) or "list"
+    if action != "list":
+        print(f"Unknown templates action: {action}")
+        return 2
+
+    root = _templates_dir()
+    if not root.exists():
+        print("No templates bundled with this install.")
+        return 0
+
+    entries = sorted(p for p in root.iterdir() if p.is_dir() and not p.name.startswith("."))
+    if not entries:
+        print(f"No templates found in {root}")
+        return 0
+
+    print(f"\n  Templates ({root}):\n")
+    for entry in entries:
+        readme = entry / "README.md"
+        summary = ""
+        if readme.exists():
+            for line in readme.read_text().splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    summary = line
+                    break
+        print(f"    {entry.name:<14}  {summary}")
+    print()
+    print("  Run one:    lak bot templates/<name>")
+    print("  Customize:  cp -r templates/<name> ./my-agent && lak bot ./my-agent")
+    print()
+    return 0
+
+
 def main():
     from local_agent_kit import __version__
 
@@ -249,6 +299,9 @@ def main():
 
     sub.add_parser("hardware", help="Show hardware detection")
 
+    p_tpl = sub.add_parser("templates", help="List bundled template starter configs")
+    p_tpl.add_argument("action", nargs="?", default="list", choices=["list"])
+
     args = parser.parse_args()
 
     commands = {
@@ -256,6 +309,7 @@ def main():
         "doctor": cmd_doctor,
         "bot": cmd_bot,
         "hardware": cmd_hardware,
+        "templates": cmd_templates,
     }
 
     if args.command in commands:
