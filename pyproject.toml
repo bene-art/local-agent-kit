@@ -30,7 +30,8 @@ dependencies = [
 [project.optional-dependencies]
 telegram = ["aiohttp>=3.9"]
 eval = []
-all = ["aiohttp>=3.9"]
+schedule = ["croniter>=2.0"]
+all = ["aiohttp>=3.9", "croniter>=2.0"]
 
 [project.scripts]
 lak = "local_agent_kit.cli:main"
