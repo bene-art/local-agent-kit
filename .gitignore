@@ -1,6 +1,7 @@
 .env
 *.db
 *.jsonl
+!templates/**/*.jsonl
 __pycache__/
 *.pyc
 .promptfoo/
