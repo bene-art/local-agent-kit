@@ -1,0 +1,25 @@
+# Writer template — draft, edit, tone-shape long-form prose.
+#
+# Paste in a passage and ask for an edit, a rewrite, or a tone shift.
+# Runs without external tools and without web search.
+#
+# Run from the kit:  lak bot templates/writer
+
+name: Writer
+model: gemma4:e4b
+channel: cli
+
+temperature: 0.6           # drafting wants some variation
+max_tokens: 800            # multi-paragraph output
+
+ollama_host: http://localhost:11434
+
+search:
+  provider: none
+
+conversation_memory:
+  enabled: true
+  max_history: 6           # short — long history degrades small-model edits
+
+tools:
+  web_search: false
