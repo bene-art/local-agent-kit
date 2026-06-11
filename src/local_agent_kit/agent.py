@@ -207,6 +207,12 @@ class Agent:
         # Call the LLM
         response = await self._ollama_chat(full_msg)
 
+        # Empty-response guard — small local models sometimes return whitespace
+        # when they have nothing useful to say. Replace with an explicit refusal
+        # so the user never sees silence.
+        if not response or not response.strip():
+            response = "I do not have data on that right now."
+
         # Update conversation history
         self._history.append({"role": "user", "content": text})
         self._history.append({"role": "assistant", "content": response})
