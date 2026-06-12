@@ -21,9 +21,24 @@ import aiohttp
 import yaml
 
 from local_agent_kit.channels.base import Channel, Message
+from local_agent_kit.patterns.narrate_only import envelope
+from local_agent_kit.scheduling.schedule import ScheduledTask, load_schedules
 from local_agent_kit.search.base import SearchProvider
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_dotted(path: str) -> Any:
+    """Import a callable from a dotted path like 'pkg.mod:fn' or 'pkg.mod.fn'."""
+    import importlib
+
+    if ":" in path:
+        mod_path, attr = path.split(":", 1)
+    else:
+        mod_path, _, attr = path.rpartition(".")
+    if not mod_path or not attr:
+        raise ValueError(f"invalid dotted path: {path!r}")
+    return getattr(importlib.import_module(mod_path), attr)
 
 
 @dataclass
@@ -42,6 +57,18 @@ class AgentConfig:
     web_search: bool = True
     memory_enabled: bool = True
     memory_max_history: int = 20
+
+    # Disable Ollama's reasoning-token phase. Default True (kept on) because
+    # most templates benefit from it. Templates with tight num_predict budgets
+    # (briefer, anything narrate-only) should set this to False — otherwise
+    # the thinking phase can eat the entire token budget before any visible
+    # content is generated.
+    think: bool = True
+
+    # Schedules — parsed from the `schedules:` block in agent.yaml.
+    # Empty list if no schedules are declared. The LocalScheduler runtime
+    # (croniter dep) is only loaded when this list is non-empty.
+    schedules: list[ScheduledTask] = field(default_factory=list)
 
 
 def load_config(agent_dir: Path) -> AgentConfig:
@@ -66,6 +93,11 @@ def load_config(agent_dir: Path) -> AgentConfig:
         mem = data.get("conversation_memory", {})
         config.memory_enabled = mem.get("enabled", config.memory_enabled)
         config.memory_max_history = mem.get("max_history", config.memory_max_history)
+
+        if "think" in data:
+            config.think = bool(data["think"])
+
+        config.schedules = load_schedules(data)
 
     # Load system prompt from IDENTITY.md
     identity_path = agent_dir / "identity" / "IDENTITY.md"
@@ -149,6 +181,10 @@ class Agent:
             "model": self.config.model,
             "messages": messages,
             "stream": False,
+            # Templates with tight num_predict budgets must set think:false
+            # in agent.yaml — otherwise the model's reasoning phase can eat
+            # the entire token budget before any visible content is generated.
+            "think": self.config.think,
             "options": {
                 "temperature": self.config.temperature,
                 "num_predict": self.config.max_tokens,
@@ -223,8 +259,44 @@ class Agent:
 
         return response
 
+    async def _run_scheduled_task(self, task: ScheduledTask) -> None:
+        """Fire one ScheduledTask through Agent.handle + the agent's channel.
+
+        If the task names a fetcher, call it first, wrap its output as
+        [SYSTEM DATA], and append to the task's prompt — the "Python computes,
+        model narrates" pattern.
+        """
+        full_prompt = task.prompt
+        if task.fetcher:
+            fn = _resolve_dotted(task.fetcher)
+            try:
+                data = await fn() if asyncio.iscoroutinefunction(fn) else fn()
+            except Exception:
+                logger.exception("fetcher %s failed for task %s", task.fetcher, task.name)
+                return
+            if not isinstance(data, str):
+                data = str(data)
+            full_prompt = task.prompt + envelope(task.name, data)
+
+        response = await self.handle(full_prompt)
+        await self.channel.send(response, thread_id=None)
+
     async def run(self) -> None:
-        """Main loop: listen → handle → respond."""
+        """Main loop: listen → handle → respond. Drives the scheduler too."""
+        scheduler = None
+        if self.config.schedules:
+            try:
+                from local_agent_kit.scheduling.local_scheduler import LocalScheduler
+            except ImportError as exc:
+                raise RuntimeError(
+                    "agent.yaml declares schedules but croniter is not installed. "
+                    "Install with: pip install local-agent-kit[schedule]"
+                ) from exc
+            scheduler = LocalScheduler(runner=self._run_scheduled_task)
+            for task in self.config.schedules:
+                await scheduler.add(task)
+            await scheduler.start()
+
         await self.channel.start()
 
         try:
@@ -241,6 +313,8 @@ class Agent:
         except (KeyboardInterrupt, asyncio.CancelledError):
             pass
         finally:
+            if scheduler is not None:
+                await scheduler.stop()
             await self.channel.stop()
             if self._session and not self._session.closed:
                 await self._session.close()
