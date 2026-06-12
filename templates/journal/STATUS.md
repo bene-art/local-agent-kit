@@ -45,8 +45,25 @@ encryption-at-rest:
    reads/writes with a cipher of your choosing. Swap it in
    `run_journal.py` where `SQLiteMemory` is constructed.
 
+## Verifying the "zero outbound" claim
+
+Two layers ship:
+
+1. **pytest test** (`tests/test_journal_privacy.py`) — monkeypatches
+   `aiohttp.ClientSession.post`, runs one `Agent.handle` turn from the
+   journal template, fails CI if any non-localhost URL is requested.
+   Also asserts `search.provider == "none"`, `web_search == False`, and
+   `file_read_roots == []` in the agent.yaml. Locks in the contract.
+
+2. **Runtime audit** (`templates/journal/audit.py`) — wraps
+   `run_journal.py` under `lsof` monitoring; reports any non-local
+   ESTABLISHED TCP connection observed during the session. Use when
+   you want manual verification beyond the unit test:
+
+       python -m templates.journal.audit \
+           --agent-dir templates/journal \
+           --db ./journal.db
+
 ## Outstanding (not yet built)
-- An audit script that verifies zero outbound network packets during a
-  journal session. Manual verification (`lsof`, `tcpdump`) until then.
 - A `MemoryEncrypted` reference implementation, if/when `sqlcipher` is
   approved as a dependency.
