@@ -1,24 +1,36 @@
 # STATUS — briefer
 
-**State:** partially unblocked (runtime built; wiring + fetcher pending)
-**Remaining blockers:**
-  1. Agent.run integration — `Agent` doesn't yet call `load_schedules()` or wire a `LocalScheduler` into its main loop.
-  2. No example fetcher — briefer needs at least one concrete data source (news headlines is the easy one) to be a meaningful template.
-**Owner:** kit
-**Unblock condition:** Agent loads the `schedules:` block at boot, starts a `LocalScheduler` that fires the declared tasks through `Agent.handle()`, output goes through `Channel.send()`. One example fetcher ships.
+**State:** ready
+**Last verified:** 2026-06-12
 
-## What is built (2026-06-11)
-- `agent.yaml`, `identity/IDENTITY.md`, `README.md`, eval cases.
-- `croniter` approved as `[schedule]` optional dependency.
-- `LocalScheduler` (asyncio-based, in-process) — `src/local_agent_kit/scheduling/local_scheduler.py`.
-- `load_schedules()` parser.
-- `narrate_only.envelope()` — the helper that wraps Python-computed strings as `[SYSTEM DATA]` for the model to narrate.
+## What ships
+- `agent.yaml` with a declared schedule and a Hacker News RSS fetcher.
+- `fetch_news.py` — example fetcher (httpx + stdlib XML, no extra deps).
+- IDENTITY enforces the narrate-only contract (model adds at most three
+  sentences of framing, never invents numbers, refuses on empty data).
+- Eval suite passes 4/4 on `gemma4:e4b`.
+- End-to-end live fire verified: fetcher → `envelope()` → `Agent.handle()` →
+  channel.send, with the model correctly narrating real RSS headlines and
+  flagging what the data did not cover.
 
-## What is NOT built
-- `Agent.run` doesn't auto-start a scheduler from the `schedules:` block.
-- No example data fetcher (news / calendar / portfolio) lives in the template.
+## Run it
 
-## Acceptance criteria for full unblock
-- `lak bot templates/briefer` runs and fires the declared schedule.
-- Eval suite passes against `gemma4:e4b` (no fabrication of numbers — verified by `NarrationRubric`).
-- One example fetcher (news headlines, RSS or similar) ships alongside the template.
+```bash
+lak bot templates/briefer
+```
+
+The declared schedule (`0 7 * * *`) fires daily at 7am, fetches headlines,
+and posts to the configured channel. Override the RSS feed with the
+`BRIEFER_RSS_URL` env var.
+
+## Notes on extending
+
+- Swap `fetch_news.py` for a custom fetcher by changing the `fetcher:` dotted
+  path in `agent.yaml`. Any callable returning a string works — it gets
+  wrapped in `[SYSTEM DATA]` automatically.
+- Reasoning is OFF for this template (`think: false`) — narrate-only at a
+  250-token budget doesn't have room for the reasoning phase. Bump
+  `max_tokens` and flip `think` back on if you want the model to plan
+  before narrating.
+- Channel defaults to `cli` for local testing. Set `TG_BOT_TOKEN` +
+  `TG_CHAT_ID` and switch `channel: telegram` to push to Telegram.

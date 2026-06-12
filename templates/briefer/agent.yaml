@@ -11,10 +11,15 @@
 
 name: Briefer
 model: gemma4:e4b
-channel: telegram          # cli for testing; telegram for real use
+channel: cli               # swap to "telegram" once TG_BOT_TOKEN + TG_CHAT_ID are set
 
 temperature: 0.2           # narration wants almost no variation
 max_tokens: 250
+
+# Reasoning models eat tokens before producing visible output; briefer's
+# 250-token budget is too small to afford the thinking phase. Off for this
+# template — it's pure narration, no reasoning needed.
+think: false
 
 ollama_host: http://localhost:11434
 
@@ -27,10 +32,9 @@ conversation_memory:
 tools:
   web_search: false
 
-# Once the Scheduler runtime lands, declare schedules here:
-#
-# schedules:
-#   - name: morning_brief
-#     cron: "0 7 * * *"
-#     prompt: "Frame this in one sentence."
-#     channel: telegram
+schedules:
+  - name: morning_brief
+    cron: "0 7 * * *"
+    prompt: "Frame today's headlines in one or two sentences. Do not invent stories not listed."
+    channel: cli
+    fetcher: templates.briefer.fetch_news:get_headlines
