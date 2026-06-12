@@ -1,21 +1,54 @@
 # STATUS — study_buddy
 
-**State:** blocked
-**Blockers:**
-  1. Memory track — needs persistent storage of source material across sessions.
-  2. `StateFlow` primitive — Python-driven multi-step interaction (current step, expected output, transitions). Powers the quiz loop. Also used by `interviewer` template.
-**Owner:** memory track + kit
-**Unblock condition:** memory layer supports loading + querying a user-supplied source; `StateFlow` ships in `src/local_agent_kit/patterns/state_flow.py`.
+**State:** ready
+**Last verified:** 2026-06-12
 
-## What is built
+## What ships
 - `agent.yaml`, `identity/IDENTITY.md`, `README.md`, eval cases.
-- IDENTITY enforces one-question-at-a-time and grounded-in-material rules.
+- IDENTITY enforces one-question-at-a-time, short grades, grounded
+  explanations.
+- `run_study.py` — runner with two modes in one session:
+    - **Explain** (default): user asks → source material injected as
+      `[SYSTEM DATA]` → agent answers grounded in that source.
+    - **Quiz**: user types `quiz` → runner loads a `StateFlow` schema,
+      walks the user through questions one at a time, agent grades each
+      answer in one short phrase, full transcript written to markdown
+      at the end.
+- Example source material (`sources/photosynthesis.md`) and quiz
+  schema (`quizzes/photosynthesis.yaml`).
+- Uses the StateFlow primitive (`local_agent_kit.patterns.StateFlow`)
+  for the quiz loop and `narrate_only.envelope()` for source injection.
 
-## What is NOT built
-- The `StateFlow` primitive.
-- The memory-track integration that loads source material into [SYSTEM DATA].
+## Run it
 
-## Acceptance criteria for unblock
-- `lak bot templates/study_buddy` can ingest a source file and quiz from it.
-- Eval suite passes against `gemma4:e4b` on "one question at a time" and "grading is short" cases.
-- A 10-question quiz run completes without the model losing track (multi-turn coherence check — the trigger threshold for whether `gemma4:e4b` carries the state-machine load or whether `ModelRouter` escalation is needed for this template).
+```bash
+python -m templates.study_buddy.run_study \
+    --agent-dir templates/study_buddy \
+    --source   templates/study_buddy/sources/photosynthesis.md \
+    --quiz     templates/study_buddy/quizzes/photosynthesis.yaml
+```
+
+Then:
+
+- Default mode — ask questions about the source.
+- Type `quiz` — start a quiz; one question at a time.
+- Type `quit` — exit.
+
+Quiz transcripts (Q + your answer + agent's grade) get written to
+`./quiz-YYYYMMDD-HHMMSS.md` in the output directory.
+
+## Customize
+
+Drop your own source file (markdown or text) — it's loaded once and
+injected on every explain turn. Write your own quiz schema using the
+same shape as `quizzes/photosynthesis.yaml` (a list of `{id, prompt}`
+steps; `follow_up:` and `next:` are optional).
+
+## Notes
+- `think: false` is set in `agent.yaml` because the IDENTITY caps
+  explanations at two-or-three sentences; the reasoning phase would
+  eat the token budget otherwise (same architecture as briefer).
+- Cross-session persistence (remembering which questions a user has
+  already answered correctly) is not yet wired. Each session starts
+  fresh. Adding `SQLiteMemory` to track quiz progress is a natural
+  follow-up.

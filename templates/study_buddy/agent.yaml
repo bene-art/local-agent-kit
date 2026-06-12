@@ -16,6 +16,11 @@ channel: cli
 temperature: 0.3
 max_tokens: 350
 
+# Explanations and grades are short by IDENTITY rule (two or three
+# sentences). Disable the reasoning-token phase so the tight budget
+# isn't eaten before any visible content is generated.
+think: false
+
 ollama_host: http://localhost:11434
 
 search:

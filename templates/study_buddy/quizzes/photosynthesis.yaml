@@ -1,0 +1,22 @@
+# Example quiz schema for the photosynthesis source.
+#
+# Each step is one question. After the user answers, the runner asks the
+# agent to grade the answer in one short phrase. The captured answers
+# (and the agent's grading) get written to disk at the end.
+
+steps:
+  - id: reactants
+    prompt: "What are the inputs to photosynthesis?"
+    follow_up: "Hint — there are two main ones; one is in the air and one is in the soil."
+
+  - id: products
+    prompt: "What are the two products of photosynthesis?"
+
+  - id: pigment
+    prompt: "What pigment in chloroplasts absorbs light, and what color does it reflect?"
+
+  - id: stages
+    prompt: "Name the two stages of photosynthesis."
+
+  - id: why_green
+    prompt: "Why do plants appear green?"
