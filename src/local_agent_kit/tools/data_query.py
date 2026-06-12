@@ -108,6 +108,26 @@ def _stringify(value: object) -> str:
     return str(value)
 
 
+async def data_peek(
+    file_path: str,
+    *,
+    allowed_roots: list[Path | str],
+    n_rows: int = 20,
+) -> str:
+    """Return the first N rows of a CSV/JSONL file as a formatted table.
+
+    A thin wrapper around `data_query` with `SELECT * LIMIT N`. Intended
+    for "show me this data" UX: small local models can't reliably author
+    aggregation SQL, but they CAN narrate a head sample.
+    """
+    return await data_query(
+        file_path,
+        f"SELECT * FROM data LIMIT {n_rows}",
+        allowed_roots=allowed_roots,
+        max_rows=n_rows,
+    )
+
+
 async def data_query(
     file_path: str,
     sql: str,

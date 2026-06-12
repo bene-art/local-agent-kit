@@ -26,5 +26,11 @@ conversation_memory:
 
 tools:
   web_search: false
-  # file_read: true
-  # data_query: true
+  # When the user mentions a CSV/JSONL path under one of these roots,
+  # the agent auto-injects a tabular head sample via data_peek. The
+  # model can then narrate the structure / first rows. For aggregations
+  # (SUM, GROUP BY, etc.) the user composes data_query directly — see
+  # the analyst README.
+  file_read:
+    roots: ["."]
+    data_peek_rows: 20

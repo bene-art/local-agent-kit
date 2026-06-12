@@ -18,7 +18,7 @@ Conventions (matched from patrick-agent's tool suite):
     - hardcodes a universal blocklist for obvious-secret name patterns
     - takes config as keyword arguments — the kit's Agent passes them from agent.yaml
 """
-from local_agent_kit.tools.data_query import data_query
+from local_agent_kit.tools.data_query import data_peek, data_query
 from local_agent_kit.tools.file_read import file_read, list_files
 
-__all__ = ["data_query", "file_read", "list_files"]
+__all__ = ["data_peek", "data_query", "file_read", "list_files"]

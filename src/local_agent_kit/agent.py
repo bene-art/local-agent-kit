@@ -69,6 +69,10 @@ class AgentConfig:
     # injects file contents for paths it detects in user messages.
     file_read_roots: list[str] = field(default_factory=list)
     file_read_max_chars: int = 3000
+    # Number of rows to peek when a CSV/JSONL path is mentioned (the
+    # data_peek auto-injection path). Set to 0 to disable peek and fall
+    # back to raw file_read for data files.
+    data_peek_rows: int = 20
 
     # Schedules — parsed from the `schedules:` block in agent.yaml.
     # Empty list if no schedules are declared. The LocalScheduler runtime
@@ -96,13 +100,14 @@ def load_config(agent_dir: Path) -> AgentConfig:
         config.web_search = tools.get("web_search", config.web_search) if not isinstance(tools.get("web_search"), dict) else config.web_search
 
         # file_read config: tools.file_read can be a bool (legacy / disable)
-        # or a mapping with roots + max_chars.
+        # or a mapping with roots + max_chars + data_peek_rows.
         fr = tools.get("file_read")
         if isinstance(fr, dict):
             roots = fr.get("roots") or []
             if isinstance(roots, list):
                 config.file_read_roots = [str(r) for r in roots]
             config.file_read_max_chars = int(fr.get("max_chars", config.file_read_max_chars))
+            config.data_peek_rows = int(fr.get("data_peek_rows", config.data_peek_rows))
 
         mem = data.get("conversation_memory", {})
         config.memory_enabled = mem.get("enabled", config.memory_enabled)
@@ -224,17 +229,21 @@ class Agent:
     # path prefix (./, ../, ~/, or /) followed by at least one path
     # component, ending in a common content extension. Conservative on
     # purpose — false positives become unwanted disk reads.
-    _PATH_RE = re.compile(
-        r"(?:\.\.?/|~/|/)[\w\-./]+\.(?:md|txt|py|js|ts|tsx|json|jsonl|yaml|yml|csv|html|css|sh|rs|go|toml|ini|conf|sql)\b"
+    #
+    # Two regexes: text files get raw file_read; data files get a
+    # tabular peek via data_query so the model sees structure, not raw bytes.
+    _DATA_PATH_RE = re.compile(r"(?:\.\.?/|~/|/)[\w\-./]+\.(?:csv|jsonl)\b")
+    _TEXT_PATH_RE = re.compile(
+        r"(?:\.\.?/|~/|/)[\w\-./]+\.(?:md|txt|py|js|ts|tsx|json|yaml|yml|html|css|sh|rs|go|toml|ini|conf|sql)\b"
     )
 
     async def _maybe_read_file(self, text: str) -> str:
-        """If the message mentions a file path inside an allowed root,
+        """If the message mentions a non-data file inside an allowed root,
         read it and return a [SYSTEM DATA] envelope. Otherwise empty."""
         if not self.config.file_read_roots:
             return ""
 
-        matches = self._PATH_RE.findall(text)
+        matches = self._TEXT_PATH_RE.findall(text)
         if not matches:
             return ""
 
@@ -252,6 +261,33 @@ class Agent:
         if content.startswith("[") and content.endswith("]"):
             return ""
         return f"\n\n[SYSTEM DATA — file_read {path}]\n{content}"
+
+    async def _maybe_show_data(self, text: str) -> str:
+        """If the message mentions a CSV/JSONL file inside an allowed root,
+        peek the first N rows and return a [SYSTEM DATA] envelope.
+
+        Distinct from _maybe_read_file because data files look better as
+        a formatted table than as raw bytes. Set data_peek_rows: 0 in
+        agent.yaml to disable this and route data files through raw file_read.
+        """
+        if not self.config.file_read_roots or self.config.data_peek_rows <= 0:
+            return ""
+
+        matches = self._DATA_PATH_RE.findall(text)
+        if not matches:
+            return ""
+
+        from local_agent_kit.tools.data_query import data_peek
+
+        path = matches[0]
+        content = await data_peek(
+            path,
+            allowed_roots=self.config.file_read_roots,
+            n_rows=self.config.data_peek_rows,
+        )
+        if content.startswith("[") and content.endswith("]"):
+            return ""
+        return f"\n\n[SYSTEM DATA — head of {path}]\n{content}"
 
     async def _maybe_search(self, text: str) -> str:
         """Check if the message needs a web search and fetch results."""
@@ -287,8 +323,11 @@ class Agent:
         # Check for file_read auto-injection (paths in the message)
         file_context = await self._maybe_read_file(text)
 
+        # Check for data peek (CSV/JSONL paths)
+        data_context = await self._maybe_show_data(text)
+
         # Build the full message with any tool context
-        full_msg = text + search_context + file_context
+        full_msg = text + search_context + file_context + data_context
 
         # Call the LLM
         response = await self._ollama_chat(full_msg)
