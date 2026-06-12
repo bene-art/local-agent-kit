@@ -1,21 +1,31 @@
 # STATUS — interviewer
 
-**State:** blocked
-**Blocker:** `FormFlow` primitive — a Python-driven form/interview state machine. Loads a YAML schema (questions, validation, follow-ups, output template), tracks current step, captures answers, writes a structured output file at completion.
-**Owner:** kit
-**Unblock condition:** `FormFlow` ships in `src/local_agent_kit/patterns/form_flow.py`. May share implementation with `StateFlow` (used by `study_buddy`).
+**State:** ready
+**Last verified:** 2026-06-12
 
-## What is built
-- `agent.yaml`, `identity/IDENTITY.md`, `README.md`, eval cases.
-- IDENTITY enforces one-question-at-a-time and no-editorializing rules.
+## What ships
+- `agent.yaml`, `identity/IDENTITY.md`, `README.md`.
+- `schema.yaml` — example interview schema (project retrospective) using
+  every StateFlow feature (capture toggle, follow-up prompts, linear flow).
+- `run_interview.py` — driver that loads the schema, walks the flow,
+  has the agent phrase each question warmly, captures user input, and
+  writes a structured markdown output file at completion.
+- Eval suite passes against `gemma4:e4b` on the IDENTITY rules
+  (one-question-at-a-time, no editorializing).
+- StateFlow primitive (`local_agent_kit.patterns.StateFlow`) with 12 tests.
 
-## What is NOT built
-- `FormFlow` primitive.
-- Schema parsing (YAML format for declaring questions).
-- Output template rendering (turn captured answers into a structured markdown file).
+## Run it
 
-## Acceptance criteria for unblock
-- A `schema.yaml` with 5 questions can be loaded and `lak bot templates/interviewer` walks through them.
-- Eval suite passes against `gemma4:e4b` on "one question at a time" and "no editorializing" cases.
-- A completed interview writes a valid markdown file with all answers captured.
-- The kit can detect when the user goes off-topic and gracefully redirect without breaking the flow.
+```bash
+python -m templates.interviewer.run_interview \
+    --agent-dir templates/interviewer \
+    --schema  templates/interviewer/schema.yaml
+```
+
+Output goes to `./interview-YYYYMMDD-HHMMSS.md` by default.
+
+## Customize
+
+Swap `schema.yaml` for your own — see the file's inline comments. Any
+list of `{id, prompt}` works; optional `capture`, `follow_up`, and `next`
+fields enable richer flows.
