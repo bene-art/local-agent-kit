@@ -39,6 +39,12 @@ class ScheduledTask:
     cron: str          # five-field cron: "minute hour day month weekday"
     prompt: str        # the message handed to Agent.handle() at fire time
     channel: str       # name of a configured channel for sending the result
+    fetcher: str | None = None
+    # Optional dotted Python path to a callable that returns a string.
+    # If set, the runner calls it at fire time, wraps the result with
+    # `narrate_only.envelope()`, and appends to `prompt` before calling
+    # Agent.handle(). Enables the "Python computes, model narrates" pattern
+    # used by the briefer template.
 
 
 class Scheduler(Protocol):
@@ -93,12 +99,18 @@ def load_schedules(agent_yaml: dict[str, Any]) -> list[ScheduledTask]:
         if missing:
             raise ValueError(f"schedules[{i}] missing required fields: {missing}")
         _validate_cron(entry["cron"])
+        fetcher = entry.get("fetcher")
+        if fetcher is not None and not isinstance(fetcher, str):
+            raise ValueError(
+                f"schedules[{i}].fetcher must be a string (dotted import path), got {type(fetcher).__name__}"
+            )
         tasks.append(
             ScheduledTask(
                 name=str(entry["name"]),
                 cron=str(entry["cron"]),
                 prompt=str(entry["prompt"]),
                 channel=str(entry["channel"]),
+                fetcher=fetcher,
             )
         )
 
