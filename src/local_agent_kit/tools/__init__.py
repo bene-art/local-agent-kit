@@ -8,6 +8,8 @@ on a tool error — it surfaces the envelope.
 Current tools:
     file_read   — read a file from a configured allowlist.
     list_files  — list a directory in the allowlist.
+    data_query  — run a SELECT against a CSV/JSONL file loaded into
+                  an in-memory SQLite table.
 
 Conventions (matched from patrick-agent's tool suite):
     - async def tool_name(args, *, config_keyword_args) -> str
@@ -16,6 +18,7 @@ Conventions (matched from patrick-agent's tool suite):
     - hardcodes a universal blocklist for obvious-secret name patterns
     - takes config as keyword arguments — the kit's Agent passes them from agent.yaml
 """
+from local_agent_kit.tools.data_query import data_query
 from local_agent_kit.tools.file_read import file_read, list_files
 
-__all__ = ["file_read", "list_files"]
+__all__ = ["data_query", "file_read", "list_files"]

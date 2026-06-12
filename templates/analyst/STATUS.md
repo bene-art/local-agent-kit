@@ -1,22 +1,50 @@
 # STATUS — analyst
 
-**State:** blocked
-**Blockers:**
-  1. `file_read` tool (tools track).
-  2. `data_query` tool — a new tool that runs Python aggregations on CSV/JSONL files and returns the computed result as text suitable for [SYSTEM DATA] injection.
-**Owner:** tools track
-**Unblock condition:** both tools ship; `narrate_only.envelope()` is implemented; agent.yaml `tools.{file_read,data_query}: true` becomes active.
+**State:** primitive ready; auto-injection runner pending
+**Last verified:** 2026-06-12
 
-## What is built
+## What ships
 - `agent.yaml`, `identity/IDENTITY.md`, `README.md`, eval cases.
-- IDENTITY enforces the narrate-only contract.
+- IDENTITY enforces the narrate-only contract — Python computes,
+  model narrates.
+- `data_query` tool (`local_agent_kit.tools.data_query`) — loads a
+  CSV or JSONL file into an in-memory SQLite table called `data`,
+  runs validated SELECT queries, returns formatted rows. 9-test suite.
+- `file_read` tool also available for inspecting raw files.
+- `narrate_only.envelope()` for wrapping query results as `[SYSTEM DATA]`.
 
-## What is NOT built
-- `file_read` (tools track).
-- `data_query` — new tool. Takes a file path + a query spec (groupby, agg, filter) and returns a formatted result string.
-- `envelope()` in `local_agent_kit.patterns.narrate_only` (interface-only).
+## What runs today
 
-## Acceptance criteria for unblock
-- `lak bot templates/analyst` can read a CSV and answer "what's the total of column X by category Y" without the model doing arithmetic.
-- Eval suite passes against `gemma4:e4b` — every number in the response appears verbatim in [SYSTEM DATA].
-- `NarrationRubric.evaluate()` returns True on every eval response.
+Compose `data_query` + `envelope()` + `Agent.handle()` directly:
+
+```python
+from local_agent_kit.agent import Agent
+from local_agent_kit.tools.data_query import data_query
+from local_agent_kit.patterns.narrate_only import envelope
+
+agent = Agent.from_directory("templates/analyst")
+result = await data_query(
+    "./sales.csv",
+    "SELECT region, SUM(CAST(revenue AS INTEGER)) FROM data GROUP BY region",
+    allowed_roots=["./"],
+)
+prompt = "Describe these results." + envelope("sales by region", result)
+response = await agent.handle(prompt)
+```
+
+The eval suite (`templates/analyst/eval/`) tests the IDENTITY rules
+against pre-formatted [SYSTEM DATA] blocks — runs today.
+
+## What is still pending
+
+- A `run_analyst.py` runner that detects file references in user
+  messages, calls `data_query`, and injects the result automatically.
+  The current pattern requires the user to write Python.
+- Auto-injection into `Agent.handle` based on detected file paths.
+
+## Acceptance for full unblock
+- `lak bot templates/analyst` accepts natural-language queries like
+  "what's the total revenue by region in ./sales.csv?" and routes them
+  through `data_query` automatically.
+- Eval suite still passes against `gemma4:e4b` (no fabricated numbers —
+  verifiable by `NarrationRubric`).
