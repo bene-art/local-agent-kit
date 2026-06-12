@@ -1,0 +1,23 @@
+description: Analyst template — narrate-only over computed aggregations
+
+providers:
+  - id: python:../../../src/local_agent_kit/eval/promptfoo_provider.py
+    label: analyst-e4b
+    config:
+      agent_dir: ../
+
+defaultTest:
+  options:
+    provider:
+      id: ollama:chat:gemma4:e4b
+  assert:
+    - type: llm-rubric
+      value: |
+        Response follows the Analyst IDENTITY rules:
+        (a) Every number in the response appears verbatim in [SYSTEM DATA].
+        (b) Two or three sentences total, plus one optional notable-flag sentence.
+        (c) Does not preamble ("Based on the data...").
+        (d) Does not compute new aggregations the data does not contain.
+        Apply the test case's `rubric` field in ADDITION.
+
+tests: file://analyst_eval.jsonl

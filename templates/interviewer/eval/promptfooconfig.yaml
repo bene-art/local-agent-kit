@@ -1,0 +1,24 @@
+description: Interviewer template — deterministic Q&A loop
+
+providers:
+  - id: python:../../../src/local_agent_kit/eval/promptfoo_provider.py
+    label: interviewer-e4b
+    config:
+      agent_dir: ../
+
+defaultTest:
+  options:
+    provider:
+      id: ollama:chat:gemma4:e4b
+  assert:
+    - type: llm-rubric
+      value: |
+        Response follows the Interviewer IDENTITY rules:
+        (a) Asks ONE question per turn — never two.
+        (b) Does not editorialize on the user's previous answer.
+        (c) Does not invent questions outside the supplied schema.
+        (d) When [SYSTEM DATA] signals completion, returns the exact
+            completion phrase.
+        Apply the test case's `rubric` field in ADDITION.
+
+tests: file://interviewer_eval.jsonl

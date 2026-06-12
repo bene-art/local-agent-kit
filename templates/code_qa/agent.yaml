@@ -1,0 +1,25 @@
+# Code Q&A template — explain, suggest fixes, write small snippets.
+#
+# Status: BLOCKED — needs `file_read` tool from the tools track. See STATUS.md.
+#
+# Run from the kit:  lak bot templates/code_qa
+
+name: CodeQA
+model: gemma4:e4b
+channel: cli
+
+temperature: 0.2           # code wants determinism
+max_tokens: 600
+
+ollama_host: http://localhost:11434
+
+search:
+  provider: none
+
+conversation_memory:
+  enabled: true
+  max_history: 8
+
+tools:
+  web_search: false
+  # file_read: true        # unlock once the tools track lands

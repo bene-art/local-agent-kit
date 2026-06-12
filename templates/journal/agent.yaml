@@ -1,0 +1,25 @@
+# Journal template — reflective companion. Private by default.
+#
+# Status: BLOCKED — needs persistent memory layer (memory track) and a
+# privacy audit before shipping. See STATUS.md.
+#
+# Run from the kit:  lak bot templates/journal
+
+name: Journal
+model: gemma4:e4b
+channel: cli
+
+temperature: 0.5
+max_tokens: 400
+
+ollama_host: http://localhost:11434
+
+search:
+  provider: none           # journal stays offline
+
+conversation_memory:
+  enabled: true
+  max_history: 12          # within-session context for the current conversation
+
+tools:
+  web_search: false        # never. journal is offline.

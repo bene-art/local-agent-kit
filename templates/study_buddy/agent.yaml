@@ -1,0 +1,29 @@
+# Study Buddy template — explain, quiz, reinforce on supplied material.
+#
+# A quiz state machine runs in Python — tracks current question, expected
+# answer, score. The model only renders the question and grades the user's
+# response.
+#
+# Status: BLOCKED — needs memory track (for source material) and the
+# `StateFlow` primitive (for quiz state). See STATUS.md.
+#
+# Run from the kit:  lak bot templates/study_buddy
+
+name: StudyBuddy
+model: gemma4:e4b
+channel: cli
+
+temperature: 0.3
+max_tokens: 350
+
+ollama_host: http://localhost:11434
+
+search:
+  provider: none           # source material is loaded from disk, not searched
+
+conversation_memory:
+  enabled: true
+  max_history: 8
+
+tools:
+  web_search: false

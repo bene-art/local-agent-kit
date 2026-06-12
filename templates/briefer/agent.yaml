@@ -1,0 +1,36 @@
+# Briefer template — scheduled summaries pushed to a channel.
+#
+# A data fetcher runs on cron, formats results deterministically in Python,
+# wraps them in [SYSTEM DATA], and asks the model only to add one sentence
+# of framing. Python computes — model narrates.
+#
+# Status: BLOCKED — needs `Scheduler` runtime (croniter dependency pending).
+# See STATUS.md.
+#
+# Run from the kit:  lak bot templates/briefer
+
+name: Briefer
+model: gemma4:e4b
+channel: telegram          # cli for testing; telegram for real use
+
+temperature: 0.2           # narration wants almost no variation
+max_tokens: 250
+
+ollama_host: http://localhost:11434
+
+search:
+  provider: none           # data comes from the schedule's fetcher, not search
+
+conversation_memory:
+  enabled: false           # briefs are stateless
+
+tools:
+  web_search: false
+
+# Once the Scheduler runtime lands, declare schedules here:
+#
+# schedules:
+#   - name: morning_brief
+#     cron: "0 7 * * *"
+#     prompt: "Frame this in one sentence."
+#     channel: telegram

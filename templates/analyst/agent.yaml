@@ -1,0 +1,30 @@
+# Analyst template — answer questions about a small structured dataset.
+#
+# Python computes the aggregation (sum, mean, group-by). The model narrates
+# the result. Never asks the model to do arithmetic.
+#
+# Status: BLOCKED — needs `file_read` + `data_query` tools (tools track).
+# See STATUS.md.
+#
+# Run from the kit:  lak bot templates/analyst
+
+name: Analyst
+model: gemma4:e4b
+channel: cli
+
+temperature: 0.2           # narrating numbers wants determinism
+max_tokens: 400
+
+ollama_host: http://localhost:11434
+
+search:
+  provider: none
+
+conversation_memory:
+  enabled: true
+  max_history: 8
+
+tools:
+  web_search: false
+  # file_read: true
+  # data_query: true

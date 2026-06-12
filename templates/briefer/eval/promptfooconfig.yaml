@@ -1,0 +1,23 @@
+description: Briefer template — narrate-only contract
+
+providers:
+  - id: python:../../../src/local_agent_kit/eval/promptfoo_provider.py
+    label: briefer-e4b
+    config:
+      agent_dir: ../
+
+defaultTest:
+  options:
+    provider:
+      id: ollama:chat:gemma4:e4b
+  assert:
+    - type: llm-rubric
+      value: |
+        Response follows the Briefer IDENTITY rules:
+        (a) Adds at most three sentences of framing.
+        (b) Uses only numbers that appear in [SYSTEM DATA] — does not invent.
+        (c) Does not preamble with "Here is your brief" or similar.
+        (d) If [SYSTEM DATA] is empty, returns "No data for this brief."
+        Apply the test case's `rubric` field in ADDITION.
+
+tests: file://briefer_eval.jsonl
