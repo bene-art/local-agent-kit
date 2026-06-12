@@ -44,11 +44,33 @@ injected on every explain turn. Write your own quiz schema using the
 same shape as `quizzes/photosynthesis.yaml` (a list of `{id, prompt}`
 steps; `follow_up:` and `next:` are optional).
 
+## Cross-session quiz progress
+
+`run_study.py` writes a `QuizProgress` SQLite file (default
+`./study_progress.db`) that tracks per-(quiz_id, step_id):
+
+- `correct_count` / `wrong_count` lifetime
+- `last_seen` timestamp
+- `last_grade` (correct | wrong)
+
+At quiz start, steps are reordered:
+
+1. **Never-seen** questions first (tier 0).
+2. **Last graded wrong** next (tier 1).
+3. **Last graded correct** last (tier 2).
+
+Stable within each tier so the schema's authored order is preserved
+when nothing distinguishes steps. Each quiz session ends with a
+lifetime score readout across all sessions.
+
+Grading is parsed from the agent's response — the IDENTITY says graders
+start with "Correct." or "Not quite." — so the heuristic is reliable
+within the template's contract.
+
+Pass `--progress-db ''` to disable cross-session tracking and run
+quiz mode purely stateless.
+
 ## Notes
 - `think: false` is set in `agent.yaml` because the IDENTITY caps
   explanations at two-or-three sentences; the reasoning phase would
   eat the token budget otherwise (same architecture as briefer).
-- Cross-session persistence (remembering which questions a user has
-  already answered correctly) is not yet wired. Each session starts
-  fresh. Adding `SQLiteMemory` to track quiz progress is a natural
-  follow-up.

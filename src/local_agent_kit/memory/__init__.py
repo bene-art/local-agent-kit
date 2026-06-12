@@ -16,6 +16,7 @@ embedding, and full-text search are out of scope here; templates that
 need them ship their own implementations of the Memory Protocol.
 """
 from local_agent_kit.memory.base import Memory
+from local_agent_kit.memory.quiz_progress import QuizProgress
 from local_agent_kit.memory.sqlite_memory import SQLiteMemory
 
-__all__ = ["Memory", "SQLiteMemory"]
+__all__ = ["Memory", "QuizProgress", "SQLiteMemory"]
