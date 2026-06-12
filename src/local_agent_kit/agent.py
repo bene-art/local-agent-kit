@@ -65,6 +65,11 @@ class AgentConfig:
     # content is generated.
     think: bool = True
 
+    # file_read tool config. If `roots` is non-empty, Agent.handle auto-
+    # injects file contents for paths it detects in user messages.
+    file_read_roots: list[str] = field(default_factory=list)
+    file_read_max_chars: int = 3000
+
     # Schedules — parsed from the `schedules:` block in agent.yaml.
     # Empty list if no schedules are declared. The LocalScheduler runtime
     # (croniter dep) is only loaded when this list is non-empty.
@@ -88,7 +93,16 @@ def load_config(agent_dir: Path) -> AgentConfig:
         config.channel = data.get("channel", config.channel)
 
         tools = data.get("tools", {})
-        config.web_search = tools.get("web_search", config.web_search)
+        config.web_search = tools.get("web_search", config.web_search) if not isinstance(tools.get("web_search"), dict) else config.web_search
+
+        # file_read config: tools.file_read can be a bool (legacy / disable)
+        # or a mapping with roots + max_chars.
+        fr = tools.get("file_read")
+        if isinstance(fr, dict):
+            roots = fr.get("roots") or []
+            if isinstance(roots, list):
+                config.file_read_roots = [str(r) for r in roots]
+            config.file_read_max_chars = int(fr.get("max_chars", config.file_read_max_chars))
 
         mem = data.get("conversation_memory", {})
         config.memory_enabled = mem.get("enabled", config.memory_enabled)
@@ -206,6 +220,39 @@ class Agent:
             logger.error("Ollama chat failed: %s", exc)
             return f"[LLM unavailable: {exc}]"
 
+    # Match local file paths users actually type. Anchored on a clear
+    # path prefix (./, ../, ~/, or /) followed by at least one path
+    # component, ending in a common content extension. Conservative on
+    # purpose — false positives become unwanted disk reads.
+    _PATH_RE = re.compile(
+        r"(?:\.\.?/|~/|/)[\w\-./]+\.(?:md|txt|py|js|ts|tsx|json|jsonl|yaml|yml|csv|html|css|sh|rs|go|toml|ini|conf|sql)\b"
+    )
+
+    async def _maybe_read_file(self, text: str) -> str:
+        """If the message mentions a file path inside an allowed root,
+        read it and return a [SYSTEM DATA] envelope. Otherwise empty."""
+        if not self.config.file_read_roots:
+            return ""
+
+        matches = self._PATH_RE.findall(text)
+        if not matches:
+            return ""
+
+        from local_agent_kit.tools.file_read import file_read
+
+        # Read at most one file per turn — keeps the context bounded and
+        # the behavior predictable.
+        path = matches[0]
+        content = await file_read(
+            path,
+            allowed_roots=self.config.file_read_roots,
+            max_chars=self.config.file_read_max_chars,
+        )
+        # Don't inject denial envelopes — they're not data, they're noise.
+        if content.startswith("[") and content.endswith("]"):
+            return ""
+        return f"\n\n[SYSTEM DATA — file_read {path}]\n{content}"
+
     async def _maybe_search(self, text: str) -> str:
         """Check if the message needs a web search and fetch results."""
         if not self.search:
@@ -237,8 +284,11 @@ class Agent:
         # Check for web search
         search_context = await self._maybe_search(text)
 
+        # Check for file_read auto-injection (paths in the message)
+        file_context = await self._maybe_read_file(text)
+
         # Build the full message with any tool context
-        full_msg = text + search_context
+        full_msg = text + search_context + file_context
 
         # Call the LLM
         response = await self._ollama_chat(full_msg)

@@ -22,4 +22,10 @@ conversation_memory:
 
 tools:
   web_search: false
-  # file_read: true        # unlock once the tools track lands
+  # When the user mentions a file path that exists under one of these
+  # roots, the agent auto-reads it and injects the content as [SYSTEM DATA]
+  # before responding. "." resolves to the working directory you run
+  # `lak bot` from — useful when you cd into your project first.
+  file_read:
+    roots: ["."]
+    max_chars: 4000
