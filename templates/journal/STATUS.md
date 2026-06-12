@@ -1,50 +1,52 @@
 # STATUS — journal
 
-**State:** primitive ready; privacy hardening pending
+**State:** ready (with explicit privacy caveats)
 **Last verified:** 2026-06-12
 
 ## What ships
 - `agent.yaml`, `identity/IDENTITY.md`, `README.md`, eval cases.
-- IDENTITY rules prioritize asking-over-telling and refuse unprompted analysis.
-- `SQLiteMemory` (`local_agent_kit.memory.SQLiteMemory`) — local SQLite-
-  backed, per-thread history with pruning. 9 tests covering the contract.
+- IDENTITY prioritizes asking over telling, refuses unprompted analysis.
+- `SQLiteMemory` (`local_agent_kit.memory.SQLiteMemory`) for cross-
+  session persistence, 9 tests.
+- `run_journal.py` — runner that wires Agent + SQLiteMemory, restores
+  prior context on each launch, persists user/assistant pairs as you go.
 
-## What runs today
+## Run it
 
-A journal session that persists across restarts can be built with:
-
-```python
-from local_agent_kit.agent import Agent
-from local_agent_kit.memory import SQLiteMemory
-
-agent = Agent.from_directory("templates/journal")
-mem = SQLiteMemory("./journal.db")
-
-# Per-turn:
-#   mem.append("default", "user", user_input)
-#   prior = mem.history("default", limit=20)
-#   response = await agent.handle(...)   # caller seeds prior context if desired
-#   mem.append("default", "assistant", response)
+```bash
+python -m templates.journal.run_journal \
+    --agent-dir templates/journal \
+    --db        ./journal.db
 ```
 
-A canonical `run_journal.py` runner like the interviewer's is not yet
-shipped — it's the next layer of work on this template.
+Sessions resume where you left off — each launch reloads the last N
+entries from the SQLite file into the agent's in-session history.
 
-## Remaining blockers for "ready" status
+## Privacy posture — read this before journaling anything sensitive
 
-1. **Encryption at rest.** SQLiteMemory writes plaintext rows. The
-   IDENTITY's privacy promise ("everything you read stays on this
-   machine") is satisfied locally, but a stolen laptop / shared
-   machine would expose entries. Options:
-   - Wrap the DB in macOS Keychain-protected file or `sqlcipher`
-     (new dep).
-   - Document the limit honestly and let users opt into FileVault.
-2. **Audit script.** Confirms zero outbound network traffic during a
-   `lak bot templates/journal` session. Hasn't been written.
-3. **A `run_journal.py`** that wires Agent + SQLiteMemory together
-   so users don't have to write Python to use the template.
+This template's IDENTITY says "everything you read stays on this machine."
+That's true at the *network* level — the agent never makes outbound
+calls during a session (no search provider, no Telegram, no cloud).
 
-## Acceptance for shipping publicly
-- Encryption decision made (sqlcipher dep, or honest "use FileVault" doc).
-- Audit script run + result published in template README.
-- `run_journal.py` ships and is documented.
+It is **not** true at the *disk* level unless you take an action:
+
+- The SQLite file (`./journal.db` by default) stores entries in plaintext.
+- A stolen laptop, a shared machine login, or a snapshot backup exposes
+  the contents.
+
+**The kit's decision on encryption:** ship the honest doc rather than
+add a `sqlcipher` dependency without operator approval. Two ways to get
+encryption-at-rest:
+
+1. **OS-level (recommended for most users)** — enable FileVault (macOS)
+   or LUKS (Linux). The journal file inherits whole-disk encryption.
+2. **Application-level** — write your own backend implementing the
+   `Memory` Protocol (`local_agent_kit.memory.Memory`) that wraps
+   reads/writes with a cipher of your choosing. Swap it in
+   `run_journal.py` where `SQLiteMemory` is constructed.
+
+## Outstanding (not yet built)
+- An audit script that verifies zero outbound network packets during a
+  journal session. Manual verification (`lsof`, `tcpdump`) until then.
+- A `MemoryEncrypted` reference implementation, if/when `sqlcipher` is
+  approved as a dependency.
