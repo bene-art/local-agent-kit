@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/bene-art/local-agent-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/bene-art/local-agent-kit/actions/workflows/ci.yml)
 
+> **Status:** Active. v0.3.0 (2026-06-12). Solo-maintained — no SLA on issues or PRs; security reports via [SECURITY.md](./SECURITY.md).
+
 Build a local-first AI agent in 5 minutes. No cloud account required.
 
 ```bash
