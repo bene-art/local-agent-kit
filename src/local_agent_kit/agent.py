@@ -159,15 +159,19 @@ class Agent:
             from local_agent_kit.channels.cli_channel import CLIChannel
             channel = CLIChannel(agent_name=config.name)
 
-        # Auto-select search if not provided
+        # Search is config-driven: `search.provider` in agent.yaml decides,
+        # never the environment. 'none' means no outbound search requests
+        # even when tools.web_search is left on.
         if search is None and config.web_search:
-            gemini_key = os.environ.get("GEMINI_API_KEY")
-            if gemini_key:
-                from local_agent_kit.search.gemini_search import GeminiSearch
-                search = GeminiSearch()
-            else:
+            if config.search_provider == "duckduckgo":
                 from local_agent_kit.search.duckduckgo_search import DuckDuckGoSearch
                 search = DuckDuckGoSearch()
+            elif config.search_provider != "none":
+                raise ValueError(
+                    f"unknown search.provider {config.search_provider!r} — "
+                    "use 'duckduckgo', 'none', or pass a SearchProvider instance "
+                    "to Agent.from_directory(search=...)"
+                )
 
         return cls(config=config, channel=channel, search=search)
 

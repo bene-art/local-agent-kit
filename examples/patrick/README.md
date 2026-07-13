@@ -4,9 +4,9 @@ This directory shows how the [Patrick reference agent](https://github.com/bene-a
 
 ## What this example demonstrates
 
-- `agent.yaml` — channel + search + memory configuration
+- `agent.yaml` — search + memory configuration
 - `identity/IDENTITY.md` — system prompt with tool-aware behavior
-- Web search wired through Gemini Flash + Google Search grounding
+- Web search wired through DuckDuckGo (no API key, no account)
 
 ## Run it
 
@@ -16,7 +16,6 @@ lak doctor --agent examples/patrick
 lak bot examples/patrick
 ```
 
-Set `GEMINI_API_KEY` in your environment for web search to work. Without it, search falls back to DuckDuckGo (change `search.provider` in `agent.yaml`).
 
 ## The full Patrick
 

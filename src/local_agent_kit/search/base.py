@@ -8,7 +8,7 @@ class SearchProvider(ABC):
     """Abstract web search provider.
 
     Implement search() to create a new provider.
-    Examples: Gemini grounding, Brave Search, DuckDuckGo, SerpAPI.
+    Examples: Brave Search, SerpAPI, a local SearXNG instance.
     """
 
     @abstractmethod
