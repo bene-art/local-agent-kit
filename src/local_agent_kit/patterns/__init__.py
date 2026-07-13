@@ -6,9 +6,9 @@ each reinventing it (and drifting from the model-as-narrator discipline).
 
 Current patterns:
     narrate_only — Python computes the result, model narrates it. Used by
-                   briefer and analyst.
+                   scheduled tasks with fetchers and data_query flows.
     state_flow   — deterministic Python-driven multi-step interactions.
-                   Used by interviewer and study_buddy.
+                   Used by study_buddy.
 """
 from local_agent_kit.patterns.narrate_only import (
     NarrationRubric,

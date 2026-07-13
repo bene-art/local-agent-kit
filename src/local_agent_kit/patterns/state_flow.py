@@ -6,8 +6,6 @@ owns the state machine: current step, captured answers, transitions.
 The model is called only at bounded points to render or grade.
 
 Used by:
-    interviewer  — declares a list of questions; one per turn; writes
-                   captured answers to a structured output file.
     study_buddy  — declares a quiz; one question per turn; tracks score.
 
 Contract:

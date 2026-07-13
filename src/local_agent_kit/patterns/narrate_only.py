@@ -5,10 +5,10 @@ the computation themselves (arithmetic, aggregation, structured-data
 summarization).
 
 Used by:
-    briefer    — fetches data, formats it deterministically, model adds
-                 one sentence of framing.
-    analyst    — Python computes group-by/sum/mean from a CSV/JSONL, model
-                 describes the result in plain language.
+    scheduled tasks — a fetcher computes and formats data deterministically,
+                      the model adds one sentence of framing.
+    data_query      — Python computes group-by/sum/mean from a CSV/JSONL,
+                      the model describes the result in plain language.
 
 The contract:
     1. Caller computes the result in Python and produces a formatted string.
