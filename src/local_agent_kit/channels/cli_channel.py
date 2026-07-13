@@ -12,7 +12,7 @@ Usage:
 from __future__ import annotations
 
 import asyncio
-import sys
+from typing import AsyncIterator
 
 from .base import Channel, Message
 
@@ -26,7 +26,7 @@ class CLIChannel(Channel):
     async def start(self) -> None:
         print(f"\n{self.agent_name} is online. Type a message (Ctrl+C to quit).\n")
 
-    async def listen(self):
+    async def listen(self) -> AsyncIterator[Message]:
         """Read from stdin, yield Messages."""
         while True:
             try:
@@ -42,7 +42,7 @@ class CLIChannel(Channel):
             except (EOFError, KeyboardInterrupt):
                 break
 
-    async def send(self, text: str, thread_id: str = "") -> bool:
+    async def send(self, text: str, thread_id: str | None = None) -> bool:
         print(f"\n{self.agent_name}: {text}\n")
         return True
 

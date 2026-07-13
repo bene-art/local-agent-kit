@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Sequence
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ _BLOCKED_PATTERNS = {
 DEFAULT_MAX_CHARS = 3000
 
 
-def _resolve_roots(roots: list[Path | str]) -> list[Path]:
+def _resolve_roots(roots: Sequence[Path | str]) -> list[Path]:
     return [Path(r).expanduser().resolve() for r in roots]
 
 
@@ -73,7 +74,7 @@ def _is_safe(path: Path, allowed_roots: list[Path]) -> bool:
 async def file_read(
     path: str,
     *,
-    allowed_roots: list[Path | str],
+    allowed_roots: Sequence[Path | str],
     max_chars: int = DEFAULT_MAX_CHARS,
 ) -> str:
     """Read a file from an allowed location.
@@ -115,7 +116,7 @@ async def file_read(
 async def list_files(
     directory: str,
     *,
-    allowed_roots: list[Path | str],
+    allowed_roots: Sequence[Path | str],
     max_entries: int = 20,
 ) -> str:
     """List files in an allowed directory, most-recent first.

@@ -23,13 +23,22 @@ class Channel(ABC):
     """
 
     @abstractmethod
-    async def listen(self) -> AsyncIterator[Message]:
-        """Yield incoming messages. Runs forever."""
+    def listen(self) -> AsyncIterator[Message]:
+        """Yield incoming messages. Runs forever.
+
+        Implement as an async generator (`async def` with `yield`) — which
+        is why this is declared `def`: an async generator function returns
+        its iterator synchronously.
+        """
         ...
 
     @abstractmethod
-    async def send(self, text: str, thread_id: str = "") -> bool:
-        """Send a message back to the user. Returns True on success."""
+    async def send(self, text: str, thread_id: str | None = None) -> bool:
+        """Send a message back to the user. Returns True on success.
+
+        thread_id is None for messages with no originating thread
+        (e.g. scheduled task results).
+        """
         ...
 
     async def start(self) -> None:

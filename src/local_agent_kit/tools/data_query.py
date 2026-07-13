@@ -28,6 +28,7 @@ import json
 import logging
 import re
 import sqlite3
+from collections.abc import Sequence
 from pathlib import Path
 
 from local_agent_kit.tools.file_read import _is_safe, _resolve_roots
@@ -117,7 +118,7 @@ def _stringify(value: object) -> str:
 async def data_peek(
     file_path: str,
     *,
-    allowed_roots: list[Path | str],
+    allowed_roots: Sequence[Path | str],
     n_rows: int = 20,
 ) -> str:
     """Return the first N rows of a CSV/JSONL file as a formatted table.
@@ -138,7 +139,7 @@ async def data_query(
     file_path: str,
     sql: str,
     *,
-    allowed_roots: list[Path | str],
+    allowed_roots: Sequence[Path | str],
     max_rows: int = DEFAULT_MAX_ROWS,
 ) -> str:
     """Load `file_path` (CSV or JSONL) into a SQLite table named `data`,
