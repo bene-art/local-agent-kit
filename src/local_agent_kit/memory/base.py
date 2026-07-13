@@ -14,7 +14,8 @@ class Memory(Protocol):
 
     Thread keying: implementations key all rows by a caller-supplied
     `thread_id` string. Channels are responsible for choosing a stable
-    thread identifier (CLI may use a fixed value; Telegram uses chat_id).
+    thread identifier (CLI may use a fixed value; a chat channel would
+    use its conversation id).
     """
 
     def append(self, thread_id: str, role: str, content: str) -> None:

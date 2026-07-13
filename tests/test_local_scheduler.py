@@ -10,7 +10,7 @@ from local_agent_kit.scheduling import LocalScheduler, ScheduledTask
 
 
 def _task(name: str = "t", cron: str = "* * * * *") -> ScheduledTask:
-    return ScheduledTask(name=name, cron=cron, prompt="p", channel="cli")
+    return ScheduledTask(name=name, cron=cron, prompt="p")
 
 
 @pytest.mark.asyncio

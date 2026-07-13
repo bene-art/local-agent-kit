@@ -10,7 +10,6 @@ def test_agent_config_defaults():
     cfg = AgentConfig()
     assert cfg.name == "Agent"
     assert cfg.model == "gemma3:12b"
-    assert cfg.channel == "cli"
     assert cfg.search_provider == "none"
     assert cfg.memory_enabled is True
 
@@ -21,7 +20,6 @@ def test_load_config_reads_agent_yaml(tmp_path: Path):
     (agent_dir / "agent.yaml").write_text(
         "name: Test\n"
         "model: gemma3:4b\n"
-        "channel: cli\n"
         "search:\n"
         "  provider: duckduckgo\n"
     )

@@ -56,33 +56,14 @@ def cmd_init(args):
     except Exception:
         pass
 
-    # 4. Channel
-    print("\n  Communication channel:")
-    print("    1. CLI (terminal — zero setup, great for testing)")
-    print("    2. Telegram (requires bot token)")
-    channel_choice = input("  Choose [1]: ").strip() or "1"
-    channel = "cli" if channel_choice == "1" else "telegram"
-
-    tg_token = ""
-    tg_chat_id = ""
-    if channel == "telegram":
-        tg_token = input("  Telegram Bot Token: ").strip()
-        tg_chat_id = input("  Telegram Chat ID: ").strip()
-
-    # 5. Search
-    print("\n  Web search provider:")
+    # 4. Search
+    print("\n  Web search:")
     print("    1. DuckDuckGo (no API key needed)")
-    print("    2. Gemini Search Grounding (requires API key, better quality)")
-    print("    3. None (local only)")
+    print("    2. None (fully offline)")
     search_choice = input("  Choose [1]: ").strip() or "1"
-    search_map = {"1": "duckduckgo", "2": "gemini", "3": "none"}
-    search = search_map.get(search_choice, "duckduckgo")
+    search = "duckduckgo" if search_choice != "2" else "none"
 
-    gemini_key = ""
-    if search == "gemini":
-        gemini_key = input("  Gemini API Key: ").strip()
-
-    # 6. Scaffold
+    # 5. Scaffold
     print(f"\n  Creating {agent_dir}/")
     agent_dir.mkdir(parents=True, exist_ok=True)
     identity_dir = agent_dir / "identity"
@@ -119,7 +100,6 @@ When you see [SYSTEM DATA] in the conversation, USE IT. That data was fetched sp
     if not config_path.exists():
         config_path.write_text(f"""name: {agent_name}
 model: {rec.model}
-channel: {channel}
 
 search:
   provider: {search}
@@ -136,14 +116,7 @@ tools:
     # .env
     env_path = agent_dir / ".env"
     if not env_path.exists():
-        lines = []
-        if gemini_key:
-            lines.append(f"GEMINI_API_KEY={gemini_key}")
-        if tg_token:
-            lines.append(f"TG_BOT_TOKEN={tg_token}")
-        if tg_chat_id:
-            lines.append(f"TG_CHAT_ID={tg_chat_id}")
-        env_path.write_text("\n".join(lines) + "\n" if lines else "# Add API keys here\n")
+        env_path.write_text("# Add environment variables here\n")
         print(f"    ✓ .env")
 
     print(f"""

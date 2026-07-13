@@ -12,7 +12,7 @@ requires-python = ">=3.11"
 authors = [
     {name = "Benjamin Easington", email = "bene-art@users.noreply.github.com"},
 ]
-keywords = ["ai", "agent", "local", "ollama", "eval", "telegram", "sovereign"]
+keywords = ["ai", "agent", "local", "ollama", "eval", "sovereign"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -28,10 +28,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-telegram = ["aiohttp>=3.9"]
-eval = []
 schedule = ["croniter>=2.0"]
-all = ["aiohttp>=3.9", "croniter>=2.0"]
+all = ["croniter>=2.0"]
 
 [project.scripts]
 lak = "local_agent_kit.cli:main"

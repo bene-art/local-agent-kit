@@ -51,7 +51,6 @@ class AgentConfig:
     system_prompt: str = ""
     ollama_host: str = "http://localhost:11434"
     search_provider: str = "none"
-    channel: str = "cli"
 
     # Tool toggles
     web_search: bool = True
@@ -94,7 +93,6 @@ def load_config(agent_dir: Path) -> AgentConfig:
         config.max_tokens = data.get("max_tokens", config.max_tokens)
         config.ollama_host = data.get("ollama_host", config.ollama_host)
         config.search_provider = data.get("search", {}).get("provider", "none") if isinstance(data.get("search"), dict) else data.get("search_provider", "none")
-        config.channel = data.get("channel", config.channel)
 
         tools = data.get("tools", {})
         config.web_search = tools.get("web_search", config.web_search) if not isinstance(tools.get("web_search"), dict) else config.web_search
@@ -156,14 +154,10 @@ class Agent:
         agent_dir = Path(agent_dir)
         config = load_config(agent_dir)
 
-        # Auto-select channel if not provided
+        # Default to the CLI channel; pass a Channel instance for anything else.
         if channel is None:
-            if config.channel == "telegram":
-                from local_agent_kit.channels.telegram_channel import TelegramChannel
-                channel = TelegramChannel()
-            else:
-                from local_agent_kit.channels.cli_channel import CLIChannel
-                channel = CLIChannel(agent_name=config.name)
+            from local_agent_kit.channels.cli_channel import CLIChannel
+            channel = CLIChannel(agent_name=config.name)
 
         # Auto-select search if not provided
         if search is None and config.web_search:

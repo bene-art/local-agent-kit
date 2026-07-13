@@ -7,7 +7,6 @@
 
 name: Writer
 model: gemma4:e4b
-channel: cli
 
 temperature: 0.6           # drafting wants some variation
 max_tokens: 800            # multi-paragraph output

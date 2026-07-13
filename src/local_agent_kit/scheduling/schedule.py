@@ -16,11 +16,10 @@ Example agent.yaml block:
       - name: morning_brief
         cron: "0 7 * * *"             # 7am daily
         prompt: "Summarize the news for today."
-        channel: telegram             # send result here
 
-This module implements the parser (`load_schedules`). The `Scheduler`
-runtime that actually fires tasks needs a cron-expression library and
-lands once that dependency is approved.
+Results are sent through the agent's channel. This module implements the
+parser (`load_schedules`); `LocalScheduler` is the in-process runtime
+(requires the `schedule` extra for croniter).
 """
 from __future__ import annotations
 
@@ -28,7 +27,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 
-_REQUIRED_FIELDS = ("name", "cron", "prompt", "channel")
+_REQUIRED_FIELDS = ("name", "cron", "prompt")
 
 
 @dataclass(frozen=True)
@@ -38,7 +37,6 @@ class ScheduledTask:
     name: str
     cron: str          # five-field cron: "minute hour day month weekday"
     prompt: str        # the message handed to Agent.handle() at fire time
-    channel: str       # name of a configured channel for sending the result
     fetcher: str | None = None
     # Optional dotted Python path to a callable that returns a string.
     # If set, the runner calls it at fire time, wraps the result with
@@ -109,7 +107,6 @@ def load_schedules(agent_yaml: dict[str, Any]) -> list[ScheduledTask]:
                 name=str(entry["name"]),
                 cron=str(entry["cron"]),
                 prompt=str(entry["prompt"]),
-                channel=str(entry["channel"]),
                 fetcher=fetcher,
             )
         )

@@ -1,11 +1,10 @@
 """Communication channels — how the agent talks to users.
 
-v1 ships with:
-  - CLI (zero setup, great for testing)
-  - Telegram (production, requires bot token)
+The kit ships with the CLI channel (zero setup, fully local).
 
-Interface: implement Channel.listen() and Channel.send()
-to add Discord, Slack, iMessage, etc.
+Interface: implement Channel.listen() and Channel.send() to add
+Telegram, Discord, Slack, iMessage, etc., and pass the instance to
+Agent.from_directory(channel=...).
 """
 from local_agent_kit.channels.base import Channel, Message
 

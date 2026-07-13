@@ -17,10 +17,10 @@ def test_explicit_null_schedules_returns_empty_list():
 def test_parses_well_formed_entry():
     tasks = load_schedules({
         "schedules": [
-            {"name": "morning", "cron": "0 7 * * *", "prompt": "Brief me.", "channel": "cli"}
+            {"name": "morning", "cron": "0 7 * * *", "prompt": "Brief me."}
         ]
     })
-    assert tasks == [ScheduledTask(name="morning", cron="0 7 * * *", prompt="Brief me.", channel="cli")]
+    assert tasks == [ScheduledTask(name="morning", cron="0 7 * * *", prompt="Brief me.")]
 
 
 def test_rejects_non_list_schedules():
@@ -30,19 +30,19 @@ def test_rejects_non_list_schedules():
 
 def test_rejects_entry_missing_required_field():
     with pytest.raises(ValueError, match="missing required fields"):
-        load_schedules({"schedules": [{"name": "x", "cron": "0 7 * * *", "prompt": "p"}]})  # no channel
+        load_schedules({"schedules": [{"name": "x", "cron": "0 7 * * *"}]})  # no prompt
 
 
 def test_rejects_bad_cron_field_count():
     with pytest.raises(ValueError, match="5 fields"):
-        load_schedules({"schedules": [{"name": "x", "cron": "0 7", "prompt": "p", "channel": "cli"}]})
+        load_schedules({"schedules": [{"name": "x", "cron": "0 7", "prompt": "p"}]})
 
 
 def test_rejects_duplicate_names():
     with pytest.raises(ValueError, match="duplicate names"):
         load_schedules({
             "schedules": [
-                {"name": "morning", "cron": "0 7 * * *", "prompt": "p", "channel": "cli"},
-                {"name": "morning", "cron": "0 8 * * *", "prompt": "q", "channel": "cli"},
+                {"name": "morning", "cron": "0 7 * * *", "prompt": "p"},
+                {"name": "morning", "cron": "0 8 * * *", "prompt": "q"},
             ]
         })

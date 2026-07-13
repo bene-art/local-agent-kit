@@ -11,7 +11,6 @@
 
 name: StudyBuddy
 model: gemma4:e4b
-channel: cli
 
 temperature: 0.3
 max_tokens: 350
