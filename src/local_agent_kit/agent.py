@@ -21,7 +21,7 @@ from typing import Any
 import aiohttp
 import yaml
 
-from local_agent_kit.channels.base import Channel, Message
+from local_agent_kit.channels.base import Channel
 from local_agent_kit.patterns.narrate_only import envelope
 from local_agent_kit.scheduling.schedule import ScheduledTask, load_schedules
 from local_agent_kit.search.base import SearchProvider

@@ -1,7 +1,7 @@
 # Journal template — reflective companion. Private by default.
 #
-# Status: BLOCKED — needs persistent memory layer (memory track) and a
-# privacy audit before shipping. See STATUS.md.
+# Fully offline: no search, no file reads, memory in a local SQLite file.
+# A test locks in the zero-outbound promise (test_journal_privacy).
 #
 # Run from the kit:  lak bot templates/journal
 

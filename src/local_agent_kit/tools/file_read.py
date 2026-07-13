@@ -14,7 +14,8 @@ Direct usage:
     from local_agent_kit.tools.file_read import file_read
     contents = await file_read("~/notes/today.md", allowed_roots=["~/notes"])
 
-Agent integration (planned, not yet wired in Agent.run):
+Agent integration — paths mentioned in user messages are auto-injected
+when roots are configured in agent.yaml:
 
     tools:
       file_read:
@@ -24,7 +25,6 @@ Agent integration (planned, not yet wired in Agent.run):
 from __future__ import annotations
 
 import logging
-import os
 from collections.abc import Sequence
 from pathlib import Path
 

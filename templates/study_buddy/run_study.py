@@ -154,7 +154,7 @@ async def run(
 
     print(f"Loaded source material from {source_path.name} ({len(source_text)} chars).")
     if quiz_path:
-        print(f"Quiz available — type `quiz` to start.")
+        print("Quiz available — type `quiz` to start.")
     if progress:
         print(f"Tracking cross-session progress in {progress_db}.")
     print("Type your question (or `quit` to exit).\n")

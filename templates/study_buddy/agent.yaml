@@ -3,9 +3,7 @@
 # A quiz state machine runs in Python — tracks current question, expected
 # answer, score. The model only renders the question and grades the user's
 # response.
-#
-# Status: BLOCKED — needs memory track (for source material) and the
-# `StateFlow` primitive (for quiz state). See STATUS.md.
+
 #
 # Run from the kit:  lak bot templates/study_buddy
 

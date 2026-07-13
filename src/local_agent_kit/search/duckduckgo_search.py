@@ -6,6 +6,7 @@ Zero configuration. Perfect for onboarding.
 from __future__ import annotations
 
 import logging
+import re
 
 import httpx
 
@@ -45,7 +46,6 @@ class DuckDuckGoSearch(SearchProvider):
                 title_end = block.find("</a>")
                 title = block[:title_end] if title_end > 0 else ""
                 # Clean HTML tags
-                import re
                 title = re.sub(r"<[^>]+>", "", title).strip()
 
                 # Extract snippet

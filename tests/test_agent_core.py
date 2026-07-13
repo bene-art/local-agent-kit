@@ -7,7 +7,6 @@ Ollama is never called — the HTTP layer is mocked at aiohttp.ClientSession
 from __future__ import annotations
 
 import aiohttp
-import pytest
 
 from local_agent_kit.agent import Agent, AgentConfig
 from local_agent_kit.channels.base import Channel, Message

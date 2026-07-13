@@ -181,7 +181,9 @@ async def data_query(
         conn.execute("PRAGMA query_only = ON")
         cursor = conn.execute(sql)
         columns = [d[0] for d in cursor.description] if cursor.description else []
-        rows = cursor.fetchmany(max_rows)
+        # Fetch one extra row so the cap notice only appears when rows
+        # were actually dropped, not when the result is exactly max_rows.
+        rows = cursor.fetchmany(max_rows + 1)
         conn.close()
     except Exception as exc:
         logger.warning("data_query failed: %s", exc)
@@ -190,10 +192,13 @@ async def data_query(
     if not rows:
         return "[no results]"
 
+    truncated = len(rows) > max_rows
+    rows = rows[:max_rows]
+
     header = " | ".join(columns)
     lines = [header, "-" * len(header)]
     for row in rows:
         lines.append(" | ".join(_stringify(v) for v in row))
-    if len(rows) == max_rows:
+    if truncated:
         lines.append(f"... (capped at {max_rows} rows)")
     return "\n".join(lines)

@@ -41,17 +41,15 @@ class ScheduledTask:
     # Optional dotted Python path to a callable that returns a string.
     # If set, the runner calls it at fire time, wraps the result with
     # `narrate_only.envelope()`, and appends to `prompt` before calling
-    # Agent.handle(). Enables the "Python computes, model narrates" pattern
-    # used by the briefer template.
+    # Agent.handle() — the "Python computes, model narrates" pattern.
 
 
 class Scheduler(Protocol):
     """Drives ScheduledTask execution on a cron-like cadence.
 
-    Planned implementations:
-        LocalScheduler  — in-process, asyncio-based. Default for `lak bot`.
-        LaunchdAgent    — emits a launchd plist (macOS, headless).
-        SystemdTimer    — emits a systemd unit (Linux, headless).
+    Implementations:
+        LocalScheduler  — in-process, asyncio-based. Default for `lak bot`
+                          (requires the `schedule` extra for croniter).
     """
 
     async def add(self, task: ScheduledTask) -> None: ...

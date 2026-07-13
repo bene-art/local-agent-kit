@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import os
 import shutil
 import subprocess
 import sys
@@ -93,7 +92,7 @@ When you see [SYSTEM DATA] in the conversation, USE IT. That data was fetched sp
 - You cannot fabricate data. If no [SYSTEM DATA] is present and you don't know, say so.
 - When corrected, acknowledge and stay on topic.
 """)
-        print(f"    ✓ identity/IDENTITY.md")
+        print("    ✓ identity/IDENTITY.md")
 
     # agent.yaml
     config_path = agent_dir / "agent.yaml"
@@ -111,13 +110,13 @@ conversation_memory:
 tools:
   web_search: {'true' if search != 'none' else 'false'}
 """)
-        print(f"    ✓ agent.yaml")
+        print("    ✓ agent.yaml")
 
     # .env
     env_path = agent_dir / ".env"
     if not env_path.exists():
         env_path.write_text("# Add environment variables here\n")
-        print(f"    ✓ .env")
+        print("    ✓ .env")
 
     print(f"""
   Done! Next steps:
@@ -139,8 +138,14 @@ def cmd_doctor(args):
     hw = detect_hardware()
     rec = recommend_model(hw)
 
-    print(f"  {'✓' if hw.ram_gb >= 8 else '✗'} RAM: {hw.ram_gb} GB")
-    print(f"  {'✓' if hw.chip != 'unknown' else '✗'} Chip: {hw.chip}")
+    ram_ok = hw.ram_gb >= 8
+    chip_ok = hw.chip != "unknown"
+    print(f"  {'✓' if ram_ok else '✗'} RAM: {hw.ram_gb} GB")
+    print(f"  {'✓' if chip_ok else '✗'} Chip: {hw.chip}")
+    if not ram_ok:
+        issues += 1
+    if not chip_ok:
+        issues += 1
 
     ollama_ok = shutil.which("ollama") is not None
     print(f"  {'✓' if ollama_ok else '✗'} Ollama installed")
@@ -156,7 +161,7 @@ def cmd_doctor(args):
                 print(f"  ✗ {rec.model} not pulled")
                 issues += 1
         except Exception:
-            print(f"  ✗ Ollama not responding")
+            print("  ✗ Ollama not responding")
             issues += 1
 
     if args.agent:
