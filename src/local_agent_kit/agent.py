@@ -10,6 +10,7 @@ Usage:
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 import os
 import re
@@ -356,9 +357,12 @@ class Agent:
         """
         full_prompt = task.prompt
         if task.fetcher:
-            fn = _resolve_dotted(task.fetcher)
+            # Resolution failures (bad dotted path, module not importable)
+            # must be contained here like call failures — otherwise they
+            # escape to the scheduler loop and the task dies silently.
             try:
-                data = await fn() if asyncio.iscoroutinefunction(fn) else fn()
+                fn = _resolve_dotted(task.fetcher)
+                data = await fn() if inspect.iscoroutinefunction(fn) else fn()
             except Exception:
                 logger.exception("fetcher %s failed for task %s", task.fetcher, task.name)
                 return
