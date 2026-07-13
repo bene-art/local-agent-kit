@@ -188,8 +188,9 @@ class Agent:
         if self.config.system_prompt:
             messages.append({"role": "system", "content": self.config.system_prompt})
 
-        # Add conversation history
-        messages.extend(self._history[-self.config.memory_max_history:])
+        # Add conversation history (unless the agent is configured stateless)
+        if self.config.memory_enabled:
+            messages.extend(self._history[-self.config.memory_max_history:])
 
         # Add current message
         messages.append({"role": "user", "content": user_msg})
@@ -336,13 +337,13 @@ class Agent:
         if not response or not response.strip():
             response = "I do not have data on that right now."
 
-        # Update conversation history
-        self._history.append({"role": "user", "content": text})
-        self._history.append({"role": "assistant", "content": response})
-
-        # Trim history
-        if len(self._history) > self.config.memory_max_history:
-            self._history = self._history[-self.config.memory_max_history:]
+        # Update conversation history (skipped entirely for stateless agents,
+        # so one turn's output can never leak into the next)
+        if self.config.memory_enabled:
+            self._history.append({"role": "user", "content": text})
+            self._history.append({"role": "assistant", "content": response})
+            if len(self._history) > self.config.memory_max_history:
+                self._history = self._history[-self.config.memory_max_history:]
 
         return response
 

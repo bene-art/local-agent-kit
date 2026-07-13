@@ -93,6 +93,48 @@ def test_from_directory_unknown_provider_raises(tmp_path: Path):
         Agent.from_directory(agent_dir, channel=CLIChannel(agent_name="t"))
 
 
+@pytest.mark.asyncio
+async def test_memory_disabled_keeps_agent_stateless(monkeypatch):
+    # conversation_memory.enabled: false must mean stateless — no history
+    # accumulation, so one turn's output can't contaminate the next.
+    from local_agent_kit.agent import Agent
+    from local_agent_kit.channels.cli_channel import CLIChannel
+
+    agent = Agent(
+        config=AgentConfig(memory_enabled=False),
+        channel=CLIChannel(agent_name="t"),
+    )
+
+    async def fake_chat(msg: str) -> str:
+        return "reply"
+
+    monkeypatch.setattr(agent, "_ollama_chat", fake_chat)
+    await agent.handle("first")
+    await agent.handle("second")
+    assert agent._history == []
+
+
+@pytest.mark.asyncio
+async def test_memory_enabled_accumulates_history(monkeypatch):
+    from local_agent_kit.agent import Agent
+    from local_agent_kit.channels.cli_channel import CLIChannel
+
+    agent = Agent(
+        config=AgentConfig(memory_enabled=True),
+        channel=CLIChannel(agent_name="t"),
+    )
+
+    async def fake_chat(msg: str) -> str:
+        return "reply"
+
+    monkeypatch.setattr(agent, "_ollama_chat", fake_chat)
+    await agent.handle("first")
+    assert agent._history == [
+        {"role": "user", "content": "first"},
+        {"role": "assistant", "content": "reply"},
+    ]
+
+
 def test_from_directory_web_search_false_disables_search(tmp_path: Path):
     from local_agent_kit.agent import Agent
     from local_agent_kit.channels.cli_channel import CLIChannel
