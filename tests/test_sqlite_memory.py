@@ -50,6 +50,17 @@ def test_max_history_prunes_oldest(tmp_path: Path):
     assert [r["content"] for r in rows] == ["msg2", "msg3", "msg4"]
 
 
+def test_history_limit_returns_most_recent_rows(tmp_path: Path):
+    # Regression: with limit < stored rows, history() must return the
+    # NEWEST N (oldest-first), not the oldest N. The old query silently
+    # dropped the most recent turns on session restore.
+    mem = SQLiteMemory(tmp_path / "m.db", max_history=20)
+    for i in range(10):
+        mem.append("t", "user", f"msg{i}")
+    rows = mem.history("t", limit=3)
+    assert [r["content"] for r in rows] == ["msg7", "msg8", "msg9"]
+
+
 def test_add_exchange_sugar(tmp_path: Path):
     mem = SQLiteMemory(tmp_path / "m.db")
     mem.add_exchange("t1", "Q?", "A.")

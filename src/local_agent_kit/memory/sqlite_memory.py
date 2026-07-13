@@ -89,9 +89,13 @@ class SQLiteMemory:
         """Return up to `limit` recent rows oldest-first."""
         conn = self._connect()
         try:
+            # Inner select takes the newest N; outer re-sorts them into
+            # chronological order for the chat-messages contract.
             rows = conn.execute(
-                "SELECT role, content FROM messages WHERE thread_id = ? "
-                "ORDER BY ts ASC, id ASC LIMIT ?",
+                "SELECT role, content FROM ("
+                "  SELECT role, content, ts, id FROM messages WHERE thread_id = ?"
+                "  ORDER BY ts DESC, id DESC LIMIT ?"
+                ") ORDER BY ts ASC, id ASC",
                 (thread_id, limit),
             ).fetchall()
         finally:
