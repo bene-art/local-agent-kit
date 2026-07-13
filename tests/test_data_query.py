@@ -69,6 +69,36 @@ async def test_rejects_select_with_blocked_keyword(sales_csv: Path, tmp_path: Pa
 
 
 @pytest.mark.asyncio
+async def test_column_names_containing_keywords_are_allowed(tmp_path: Path):
+    # Regression: substring matching blocked SELECT created_at (CREATE),
+    # last_updated (UPDATE), deleted (DELETE) — any dataset with timestamp
+    # columns was unusable. Keywords must match as whole words only.
+    f = tmp_path / "rows.csv"
+    f.write_text(
+        "created_at,last_updated,deleted\n"
+        "2026-01-01,2026-01-02,0\n"
+        "2026-02-01,2026-02-02,1\n"
+    )
+    out = await data_query(
+        str(f),
+        "SELECT created_at, last_updated FROM data WHERE deleted = 0",
+        allowed_roots=[tmp_path],
+    )
+    assert not out.startswith("[query blocked")
+    assert "2026-01-01" in out
+
+
+@pytest.mark.asyncio
+async def test_bare_blocked_keyword_still_blocked(sales_csv: Path, tmp_path: Path):
+    out = await data_query(
+        str(sales_csv),
+        "SELECT * FROM data WHERE region IN (SELECT region FROM data); DELETE FROM data",
+        allowed_roots=[tmp_path],
+    )
+    assert out.startswith("[query blocked")
+
+
+@pytest.mark.asyncio
 async def test_path_outside_allowlist_denied(sales_csv: Path, tmp_path: Path):
     elsewhere = tmp_path / "other"
     elsewhere.mkdir()

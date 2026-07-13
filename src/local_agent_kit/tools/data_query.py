@@ -26,6 +26,7 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import re
 import sqlite3
 from pathlib import Path
 
@@ -38,6 +39,11 @@ _BLOCKED_KEYWORDS = {
     "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE",
     "ATTACH", "DETACH", "PRAGMA", "VACUUM", "REINDEX",
 }
+# Word-boundary match — substring matching blocked legitimate column
+# names like created_at (CREATE) or last_updated (UPDATE).
+_BLOCKED_RE = re.compile(
+    r"\b(" + "|".join(_BLOCKED_KEYWORDS) + r")\b"
+)
 
 DEFAULT_MAX_ROWS = 20
 
@@ -46,7 +52,7 @@ def _is_safe_sql(sql: str) -> bool:
     normalized = sql.strip().upper()
     if not normalized.startswith("SELECT"):
         return False
-    return not any(kw in normalized for kw in _BLOCKED_KEYWORDS)
+    return _BLOCKED_RE.search(normalized) is None
 
 
 def _load_csv(conn: sqlite3.Connection, path: Path) -> None:
