@@ -17,6 +17,51 @@ import sys
 from pathlib import Path
 
 
+def _resolve_search_choice(choice: str) -> str:
+    """Map the wizard's search-menu input to a provider name."""
+    return "none" if choice.strip() == "2" else "duckduckgo"
+
+
+def _identity_template(agent_name: str) -> str:
+    return f"""# IDENTITY
+
+Name: {agent_name}
+Role: Your AI assistant
+Reports to: You
+
+Core function: Answer questions, search the web, help with tasks.
+
+## Your Tools
+
+You have tools that run automatically:
+
+- **Web search** — when you're asked about current events, news, or anything external, your system searches the web and gives you results as [SYSTEM DATA]. Use this data confidently.
+
+When you see [SYSTEM DATA] in the conversation, USE IT. That data was fetched specifically for this question.
+
+## What You Cannot Do
+
+- You cannot fabricate data. If no [SYSTEM DATA] is present and you don't know, say so.
+- When corrected, acknowledge and stay on topic.
+"""
+
+
+def _agent_config_template(agent_name: str, model: str, search: str) -> str:
+    return f"""name: {agent_name}
+model: {model}
+
+search:
+  provider: {search}
+
+conversation_memory:
+  enabled: true
+  max_history: 20
+
+tools:
+  web_search: {'true' if search != 'none' else 'false'}
+"""
+
+
 def cmd_init(args):
     """Interactive setup wizard."""
     from local_agent_kit.hardware import detect_hardware, format_hardware_report, recommend_model
@@ -60,7 +105,7 @@ def cmd_init(args):
     print("    1. DuckDuckGo (no API key needed)")
     print("    2. None (fully offline)")
     search_choice = input("  Choose [1]: ").strip() or "1"
-    search = "duckduckgo" if search_choice != "2" else "none"
+    search = _resolve_search_choice(search_choice)
 
     # 5. Scaffold
     print(f"\n  Creating {agent_dir}/")
@@ -71,45 +116,13 @@ def cmd_init(args):
     # IDENTITY.md template
     identity_path = identity_dir / "IDENTITY.md"
     if not identity_path.exists():
-        identity_path.write_text(f"""# IDENTITY
-
-Name: {agent_name}
-Role: Your AI assistant
-Reports to: You
-
-Core function: Answer questions, search the web, help with tasks.
-
-## Your Tools
-
-You have tools that run automatically:
-
-- **Web search** — when you're asked about current events, news, or anything external, your system searches the web and gives you results as [SYSTEM DATA]. Use this data confidently.
-
-When you see [SYSTEM DATA] in the conversation, USE IT. That data was fetched specifically for this question.
-
-## What You Cannot Do
-
-- You cannot fabricate data. If no [SYSTEM DATA] is present and you don't know, say so.
-- When corrected, acknowledge and stay on topic.
-""")
+        identity_path.write_text(_identity_template(agent_name))
         print("    ✓ identity/IDENTITY.md")
 
     # agent.yaml
     config_path = agent_dir / "agent.yaml"
     if not config_path.exists():
-        config_path.write_text(f"""name: {agent_name}
-model: {rec.model}
-
-search:
-  provider: {search}
-
-conversation_memory:
-  enabled: true
-  max_history: 20
-
-tools:
-  web_search: {'true' if search != 'none' else 'false'}
-""")
+        config_path.write_text(_agent_config_template(agent_name, rec.model, search))
         print("    ✓ agent.yaml")
 
     # .env
