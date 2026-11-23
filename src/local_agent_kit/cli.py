@@ -1,0 +1,313 @@
+"""lak — Local Agent Kit CLI.
+
+Commands:
+    lak init             Interactive setup wizard
+    lak doctor           Preflight health check
+    lak bot <dir>        Run the agent
+    lak hardware         Show hardware detection
+    lak templates list   List bundled template starter configs
+"""
+from __future__ import annotations
+
+import argparse
+import asyncio
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+
+def _resolve_search_choice(choice: str) -> str:
+    """Map the wizard's search-menu input to a provider name."""
+    return "none" if choice.strip() == "2" else "duckduckgo"
+
+
+def _identity_template(agent_name: str) -> str:
+    return f"""# IDENTITY
+
+Name: {agent_name}
+Role: Your AI assistant
+Reports to: You
+
+Core function: Answer questions, search the web, help with tasks.
+
+## Your Tools
+
+You have tools that run automatically:
+
+- **Web search** — when you're asked about current events, news, or anything external, your system searches the web and gives you results as [SYSTEM DATA]. Use this data confidently.
+
+When you see [SYSTEM DATA] in the conversation, USE IT. That data was fetched specifically for this question.
+
+## What You Cannot Do
+
+- You cannot fabricate data. If no [SYSTEM DATA] is present and you don't know, say so.
+- When corrected, acknowledge and stay on topic.
+"""
+
+
+def _agent_config_template(agent_name: str, model: str, search: str) -> str:
+    return f"""name: {agent_name}
+model: {model}
+
+search:
+  provider: {search}
+
+conversation_memory:
+  enabled: true
+  max_history: 20
+
+tools:
+  web_search: {'true' if search != 'none' else 'false'}
+"""
+
+
+def cmd_init(args):
+    """Interactive setup wizard."""
+    from local_agent_kit.hardware import detect_hardware, format_hardware_report, recommend_model
+
+    print()
+    print("=" * 50)
+    print("  Local Agent Kit — Setup")
+    print("=" * 50)
+    print()
+
+    # 1. Hardware
+    print("Detecting hardware...")
+    hw = detect_hardware()
+    rec = recommend_model(hw)
+    print(format_hardware_report(hw, rec))
+    print()
+
+    # 2. Agent name
+    agent_name = input("Agent name [my-agent]: ").strip() or "my-agent"
+    agent_dir = Path(args.dir if args.dir else f"./{agent_name}")
+
+    # 3. Ollama
+    ollama_ok = shutil.which("ollama") is not None
+    print(f"\n  {'✓' if ollama_ok else '✗'} Ollama {'found' if ollama_ok else 'not found — install from https://ollama.com'}")
+    if not ollama_ok:
+        return 1
+
+    try:
+        result = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=10)
+        if rec.model in result.stdout:
+            print(f"  ✓ {rec.model} already pulled")
+        else:
+            pull = input(f"  Pull {rec.model} ({rec.size_gb} GB)? [Y/n]: ").strip().lower()
+            if pull != "n":
+                subprocess.run(["ollama", "pull", rec.model], timeout=600)
+    except Exception:
+        pass
+
+    # 4. Search
+    print("\n  Web search:")
+    print("    1. DuckDuckGo (no API key needed)")
+    print("    2. None (fully offline)")
+    search_choice = input("  Choose [1]: ").strip() or "1"
+    search = _resolve_search_choice(search_choice)
+
+    # 5. Scaffold
+    print(f"\n  Creating {agent_dir}/")
+    agent_dir.mkdir(parents=True, exist_ok=True)
+    identity_dir = agent_dir / "identity"
+    identity_dir.mkdir(exist_ok=True)
+
+    # IDENTITY.md template
+    identity_path = identity_dir / "IDENTITY.md"
+    if not identity_path.exists():
+        identity_path.write_text(_identity_template(agent_name))
+        print("    ✓ identity/IDENTITY.md")
+
+    # agent.yaml
+    config_path = agent_dir / "agent.yaml"
+    if not config_path.exists():
+        config_path.write_text(_agent_config_template(agent_name, rec.model, search))
+        print("    ✓ agent.yaml")
+
+    # .env
+    env_path = agent_dir / ".env"
+    if not env_path.exists():
+        env_path.write_text("# Add environment variables here\n")
+        print("    ✓ .env")
+
+    print(f"""
+  Done! Next steps:
+    1. Edit {identity_dir}/IDENTITY.md — make the agent yours
+    2. lak doctor --agent {agent_dir}
+    3. lak bot {agent_dir}
+""")
+    return 0
+
+
+def cmd_doctor(args):
+    """Preflight health check."""
+    from local_agent_kit.hardware import detect_hardware, recommend_model
+
+    print("\n  Local Agent Kit — Doctor")
+    print("  " + "=" * 40)
+
+    issues = 0
+    hw = detect_hardware()
+    rec = recommend_model(hw)
+
+    ram_ok = hw.ram_gb >= 8
+    chip_ok = hw.chip != "unknown"
+    print(f"  {'✓' if ram_ok else '✗'} RAM: {hw.ram_gb} GB")
+    print(f"  {'✓' if chip_ok else '✗'} Chip: {hw.chip}")
+    if not ram_ok:
+        issues += 1
+    if not chip_ok:
+        issues += 1
+
+    ollama_ok = shutil.which("ollama") is not None
+    print(f"  {'✓' if ollama_ok else '✗'} Ollama installed")
+    if not ollama_ok:
+        issues += 1
+
+    if ollama_ok:
+        try:
+            result = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=10)
+            if rec.model in result.stdout:
+                print(f"  ✓ {rec.model} available")
+            else:
+                print(f"  ✗ {rec.model} not pulled")
+                issues += 1
+        except Exception:
+            print("  ✗ Ollama not responding")
+            issues += 1
+
+    if args.agent:
+        agent_dir = Path(args.agent)
+        identity = agent_dir / "identity" / "IDENTITY.md"
+        config = agent_dir / "agent.yaml"
+        print(f"  {'✓' if identity.exists() else '✗'} IDENTITY.md")
+        print(f"  {'✓' if config.exists() else '✗'} agent.yaml")
+        if not identity.exists() or not config.exists():
+            issues += 1
+
+    print(f"\n  {'All checks passed.' if issues == 0 else f'{issues} issue(s) found.'}")
+    return issues
+
+
+def cmd_bot(args):
+    """Run the agent."""
+    from local_agent_kit.agent import Agent
+
+    agent_dir = Path(args.agent)
+    if not agent_dir.exists():
+        print(f"Agent directory not found: {agent_dir}")
+        print("Run `lak init` first.")
+        return 1
+
+    agent = Agent.from_directory(agent_dir)
+    print(f"Starting {agent.config.name} ({agent.config.model})...")
+
+    try:
+        asyncio.run(agent.run())
+    except KeyboardInterrupt:
+        print("\nShutting down.")
+    return 0
+
+
+def cmd_hardware(args):
+    """Show hardware detection."""
+    from local_agent_kit.hardware import detect_hardware, format_hardware_report, recommend_model
+
+    hw = detect_hardware()
+    rec = recommend_model(hw)
+    print(f"\n{format_hardware_report(hw, rec)}")
+    return 0
+
+
+def _templates_dir() -> Path:
+    """Locate the bundled templates directory.
+
+    Looks in the repo (src/../../templates) for editable installs and falls
+    back to the package neighbor (next to local_agent_kit/) for site-packages
+    installs that bundle templates as package data.
+    """
+    here = Path(__file__).resolve()
+    repo_templates = here.parents[2] / "templates"
+    if repo_templates.exists():
+        return repo_templates
+    return here.parent / "templates"
+
+
+def cmd_templates(args):
+    """List bundled template starter configs."""
+    action = getattr(args, "action", None) or "list"
+    if action != "list":
+        print(f"Unknown templates action: {action}")
+        return 2
+
+    root = _templates_dir()
+    if not root.exists():
+        print("No templates bundled with this install.")
+        return 0
+
+    entries = sorted(p for p in root.iterdir() if p.is_dir() and not p.name.startswith("."))
+    if not entries:
+        print(f"No templates found in {root}")
+        return 0
+
+    print(f"\n  Templates ({root}):\n")
+    for entry in entries:
+        readme = entry / "README.md"
+        summary = ""
+        if readme.exists():
+            for line in readme.read_text().splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    summary = line
+                    break
+        print(f"    {entry.name:<14}  {summary}")
+    print()
+    print("  Run one:    lak bot templates/<name>")
+    print("  Customize:  cp -r templates/<name> ./my-agent && lak bot ./my-agent")
+    print()
+    return 0
+
+
+def main():
+    from local_agent_kit import __version__
+
+    parser = argparse.ArgumentParser(
+        prog="lak",
+        description="Local Agent Kit — build local-first AI agents on consumer hardware",
+    )
+    parser.add_argument("--version", action="version", version=f"lak {__version__}")
+    sub = parser.add_subparsers(dest="command")
+
+    p_init = sub.add_parser("init", help="Interactive setup wizard")
+    p_init.add_argument("--dir", help="Agent directory to create")
+
+    p_doc = sub.add_parser("doctor", help="Preflight health check")
+    p_doc.add_argument("--agent", help="Agent directory to check")
+
+    p_bot = sub.add_parser("bot", help="Run the agent")
+    p_bot.add_argument("agent", help="Agent directory")
+
+    sub.add_parser("hardware", help="Show hardware detection")
+
+    p_tpl = sub.add_parser("templates", help="List bundled template starter configs")
+    p_tpl.add_argument("action", nargs="?", default="list", choices=["list"])
+
+    args = parser.parse_args()
+
+    commands = {
+        "init": cmd_init,
+        "doctor": cmd_doctor,
+        "bot": cmd_bot,
+        "hardware": cmd_hardware,
+        "templates": cmd_templates,
+    }
+
+    if args.command in commands:
+        sys.exit(commands[args.command](args))
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,23 @@
+description: Writer sanity — one case, validates the chain end-to-end fast
+
+prompts:
+  - "{{user}}"
+
+providers:
+  - id: python:../../../src/local_agent_kit/eval/promptfoo_provider.py
+    label: writer-sanity
+    config:
+      agent_dir: ../
+
+defaultTest:
+  assert:
+    - type: javascript
+      value: output.trim().length > 10
+    - type: not-icontains
+      value: please provide
+    - type: not-icontains
+      value: please paste
+    - type: not-icontains
+      value: waiting for user
+
+tests: file://sanity_eval.jsonl

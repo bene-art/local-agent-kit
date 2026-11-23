@@ -1,0 +1,27 @@
+description: Journal template — reflective companion, local-only
+
+providers:
+  - id: python:../../../src/local_agent_kit/eval/promptfoo_provider.py
+    label: journal-e4b
+    config:
+      agent_dir: ../
+
+defaultTest:
+  options:
+    provider:
+      id: ollama:chat:gemma4:e4b
+  assert:
+    - type: llm-rubric
+      value: |
+        Response follows the Journal IDENTITY rules:
+        (a) Asks rather than tells, unless the user explicitly asks for advice.
+        (b) One short question at a time.
+        (c) Does not analyze, diagnose, or invoke clinical language unless
+            the user used it first.
+        (d) Does not pivot to advice ("have you tried", "you should") without
+            the user asking.
+        (e) When the user signals they are done, the response is short and
+            does not prompt further reflection.
+        Apply the test case's `rubric` field in ADDITION.
+
+tests: file://journal_eval.jsonl

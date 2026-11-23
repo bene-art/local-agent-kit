@@ -1,0 +1,24 @@
+description: Study Buddy template — grounded explanation + quiz loop
+
+providers:
+  - id: python:../../../src/local_agent_kit/eval/promptfoo_provider.py
+    label: study_buddy-e4b
+    config:
+      agent_dir: ../
+
+defaultTest:
+  options:
+    provider:
+      id: ollama:chat:gemma4:e4b
+  assert:
+    - type: llm-rubric
+      value: |
+        Response follows the Study Buddy IDENTITY rules:
+        (a) Explanations stay within the supplied source material.
+        (b) Quizzing asks ONE question at a time — never two.
+        (c) Grading is one short phrase + at most one short sentence of context.
+        (d) When asked about material outside the source, flags that and
+            does not invent specifics.
+        Apply the test case's `rubric` field in ADDITION.
+
+tests: file://study_buddy_eval.jsonl

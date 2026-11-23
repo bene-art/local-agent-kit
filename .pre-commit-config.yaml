@@ -1,0 +1,15 @@
+repos:
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: ^(\.secrets\.baseline|tests/fixtures/.*|examples/.*/data/.*)$
+
+  - repo: local
+    hooks:
+      - id: private-vocab-scrub
+        name: Block private vocabulary (local blocklist)
+        entry: python3 scripts/vocab_scrub.py
+        language: system
+        pass_filenames: true

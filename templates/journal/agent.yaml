@@ -1,0 +1,24 @@
+# Journal template — reflective companion. Private by default.
+#
+# Fully offline: no search, no file reads, memory in a local SQLite file.
+# A test locks in the zero-outbound promise (test_journal_privacy).
+#
+# Run from the kit:  lak bot templates/journal
+
+name: Journal
+model: gemma4:e4b
+
+temperature: 0.5
+max_tokens: 400
+
+ollama_host: http://localhost:11434
+
+search:
+  provider: none           # journal stays offline
+
+conversation_memory:
+  enabled: true
+  max_history: 12          # within-session context for the current conversation
+
+tools:
+  web_search: false        # never. journal is offline.
